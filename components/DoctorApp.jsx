@@ -1,9 +1,10 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { T, age, fmt, fmtS, mapDoctor, mapPatient, mapAppt, mapMsg, mapRx, PSTATUS, ASTATUS, ATYPE } from '@/lib/theme'
+import { T, age, fmt, fmtS, mapDoctor, mapPatient, mapAppt, mapMsg, mapRx, mapMedRecord, PSTATUS, ASTATUS, ATYPE } from '@/lib/theme'
 import { Ic, Tag, Av, Empty, FF, FG, StatBox, Header, BNav, QRModal, useIsMobile } from '@/components/ui'
 import HistoryReport from '@/components/HistoryReport'
+import MedicalRecordForm from '@/components/MedicalRecordForm'
 
 export default function DoctorApp({ profile, onLogout, showToast }) {
   const mob = useIsMobile()
@@ -12,18 +13,21 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
   const [appts, setAppts] = useState([])
   const [msgs, setMsgs] = useState([])
   const [rxs, setRxs] = useState([])
+  const [medRecords, setMedRecords] = useState([])
   const [page, setPage] = useState('dashboard')
   const [showQR, setShowQR] = useState(false)
   const [viewPatId, setViewPatId] = useState(null)
+  const [openRecord, setOpenRecord] = useState(null) // { appt, record|null }
   const [loading, setLoading] = useState(true)
 
   const fetchAll = useCallback(async () => {
     const did = profile.doctor_id
-    const [docRes, apptsRes, msgsRes, rxsRes] = await Promise.all([
+    const [docRes, apptsRes, msgsRes, rxsRes, recRes] = await Promise.all([
       supabase.from('doctors').select('*').eq('id', did).single(),
       supabase.from('appointments').select('*').eq('doctor_id', did),
       supabase.from('messages').select('*').or(`and(from_role.eq.doctor,from_id.eq.${did}),and(to_role.eq.doctor,to_id.eq.${did})`),
       supabase.from('prescriptions').select('*').eq('doctor_id', did),
+      supabase.from('medical_records').select('*').eq('doctor_id', did),
     ])
     const docData = docRes.data ? mapDoctor(docRes.data) : null
     setDoc(docData)
@@ -31,7 +35,8 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
     setAppts(mappedAppts)
     setMsgs((msgsRes.data || []).map(mapMsg))
     setRxs((rxsRes.data || []).map(mapRx))
-    // fetch patients who had appointments with this doctor
+    setMedRecords((recRes.data || []).map(mapMedRecord))
+
     const patIds = [...new Set(mappedAppts.map(a => a.patientId))].filter(Boolean)
     if (patIds.length > 0) {
       const { data: patsData } = await supabase.from('patients').select('*').in('id', patIds)
@@ -42,16 +47,30 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
+  // Auto-creare fișă de control la deschidere dacă nu există
+  const openMedRecord = async (appt) => {
+    let record = medRecords.find(r => r.appointmentId === appt.id)
+    if (!record) {
+      const { data } = await supabase.from('medical_records').insert({
+        appointment_id: appt.id, patient_id: appt.patientId,
+        doctor_id: appt.doctorId, patient_name: appt.patient, doctor_name: appt.doctor,
+      }).select().single()
+      if (data) { record = mapMedRecord(data); setMedRecords(r => [...r, record]) }
+    }
+    setOpenRecord({ appt, record })
+  }
+
   if (loading || !doc) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Ic n="act" s={24} c={T.blue} /></div>
 
   const unread = msgs.filter(m => !m.read && m.toRole === 'doctor').length
   const myPat = pats.filter(p => p.doctor === doc.name)
+  const pendingRecords = medRecords.filter(r => r.status !== 'completed').length
   const nav = [
     { id: 'dashboard', l: 'Acasă', ic: 'home', badge: 0 },
     { id: 'patients', l: 'Pacienți', ic: 'users', badge: 0 },
     { id: 'appointments', l: 'Programări', ic: 'cal', badge: 0 },
+    { id: 'records', l: 'Fișe', ic: 'clip', badge: pendingRecords },
     { id: 'messages', l: 'Mesaje', ic: 'msg', badge: unread },
-    { id: 'prescriptions', l: 'Rețete', ic: 'file', badge: 0 },
   ]
 
   if (viewPatId) {
@@ -61,9 +80,10 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
       <div style={{ minHeight: '100vh', background: T.bg }}>
         <Header name={doc.name} variant={doc.av} role="doctor" onLogout={onLogout} mob={mob} />
         <main style={{ padding: mob ? '16px 16px 80px' : '24px 28px', maxWidth: 900, margin: '0 auto' }}>
-          <HistoryReport title={`Istoric — ${vPat.name}`} patient={vPat} doctorFilter={doc.id} allAppts={appts} allRx={rxs} allMsgs={msgs} allDocs={[doc]} mob={mob} onBack={() => setViewPatId(null)} />
+          <HistoryReport title={`Istoricul complet — ${vPat.name}`} patient={vPat} doctorFilter={doc.id} allAppts={appts} allRx={rxs} allMsgs={msgs} allDocs={[doc]} allMedRecords={medRecords} mob={mob} onBack={() => setViewPatId(null)} onOpenRecord={openMedRecord} />
         </main>
         <BNav items={nav} active={page} set={p => { setViewPatId(null); setPage(p) }} />
+        {openRecord && <MedicalRecordForm record={openRecord.record} appt={openRecord.appt} onClose={() => setOpenRecord(null)} onSaved={fetchAll} />}
       </div>
     )
   }
@@ -81,12 +101,13 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
         <button className="btn-g" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setShowQR(true)}><Ic n="qr" s={14} /> Link & QR</button>
+        <button className="btn-p" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setPage('records')}><Ic n="clip" s={14} c="#fff" /> Fișe de completat ({pendingRecords})</button>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : 'repeat(4,1fr)', gap: mob ? 10 : 16 }}>
         {[{ l: 'Pacienți', v: pats.length, ic: 'users', c: T.blue, bg: '#EFF6FF', p: 'patients' },
           { l: 'Programări', v: appts.length, ic: 'cal', c: T.cyan, bg: T.cyanDim, p: 'appointments' },
-          { l: 'Așteptare', v: appts.filter(a => a.status === 'În așteptare').length, ic: 'clock', c: T.warning, bg: T.warningBg, p: 'appointments' },
-          { l: 'Mesaje', v: unread, ic: 'msg', c: T.purple, bg: T.purpleBg, p: 'messages' }].map((s, i) => (
+          { l: 'Fișe pending', v: pendingRecords, ic: 'clip', c: T.warning, bg: T.warningBg, p: 'records' },
+          { l: 'Mesaje noi', v: unread, ic: 'msg', c: T.purple, bg: T.purpleBg, p: 'messages' }].map((s, i) => (
           <StatBox key={i} {...s} onClick={() => setPage(s.p)} />
         ))}
       </div>
@@ -104,16 +125,21 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {list.map(p => {
               const pa = appts.filter(a => a.patientId === p.id)
+              const pRecs = medRecords.filter(r => r.patientId === p.id)
+              const pPending = pRecs.filter(r => r.status !== 'completed').length
               return (
                 <div key={p.id} className="card" style={{ padding: 16, cursor: 'pointer' }} onClick={() => setViewPatId(p.id)}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <Av name={p.name} size={42} variant="green" />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600 }}>{p.name}</div>
-                      <div style={{ fontSize: 12, color: T.inkLight }}>{age(p.dob)} ani · {pa.length} vizite · {pa.filter(a => a.status === 'Finalizată').length} finalizate</div>
+                      <div style={{ fontSize: 12, color: T.inkLight }}>{age(p.dob)} ani · {pa.length} vizite · {pRecs.filter(r => r.status === 'completed').length} fișe completate</div>
                     </div>
-                    <Tag v={PSTATUS[p.status] || 'default'} dot>{p.status}</Tag>
-                    <Ic n="eye" s={16} c={T.blue} />
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      {pPending > 0 && <Tag v="yellow" dot>{pPending} pending</Tag>}
+                      <Tag v={PSTATUS[p.status] || 'default'} dot>{p.status}</Tag>
+                      <Ic n="eye" s={16} c={T.blue} />
+                    </div>
                   </div>
                 </div>
               )
@@ -129,7 +155,7 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
     const list = [...appts].filter(a => flt === 'all' || a.status === flt).sort((a, b) => b.date.localeCompare(a.date))
     const updateStatus = async (id, status) => {
       await supabase.from('appointments').update({ status }).eq('id', id)
-      showToast(status === 'Anulată' ? 'Anulată' : 'Finalizată', status === 'Anulată' ? 'info' : 'success')
+      showToast(status === 'Anulată' ? 'Anulată' : status === 'Finalizată' ? 'Finalizată' : 'Confirmată', status === 'Anulată' ? 'info' : 'success')
       await fetchAll()
     }
     return (
@@ -139,32 +165,81 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
         </div>
         {list.length === 0 ? <div className="card"><Empty icon="cal" title="Nimic" desc="" /></div> : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {list.map(a => (
-              <div key={a.id} className="card" style={{ padding: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                  <div style={{ background: `linear-gradient(135deg,${T.blue},${T.cyan})`, borderRadius: T.r8, padding: '7px 10px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{a.time}</div>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,.7)' }}>{fmtS(a.date)}</div>
+            {list.map(a => {
+              const rec = medRecords.find(r => r.appointmentId === a.id)
+              return (
+                <div key={a.id} className="card" style={{ padding: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                    <div style={{ background: `linear-gradient(135deg,${T.blue},${T.cyan})`, borderRadius: T.r8, padding: '7px 10px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{a.time}</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,.7)' }}>{fmtS(a.date)}</div>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600 }}>{a.patient}</div>
+                      <div style={{ fontSize: 12, color: T.inkLight }}>{a.type}</div>
+                    </div>
+                    <Tag v={ATYPE[a.type] || 'blue'} dot>{a.type}</Tag>
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600 }}>{a.patient}</div>
-                    <div style={{ fontSize: 12, color: T.inkLight }}>{a.type}</div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {/* Buton fișă de control întotdeauna vizibil */}
+                    <button className="btn-g" style={{ flex: 1, justifyContent: 'center', fontSize: 12, borderColor: rec?.status === 'completed' ? T.success : T.warning, color: rec?.status === 'completed' ? T.success : T.warning }} onClick={() => openMedRecord(a)}>
+                      <Ic n="clip" s={13} c={rec?.status === 'completed' ? T.success : T.warning} />
+                      {rec?.status === 'completed' ? 'Fișă completată' : rec?.status === 'draft' ? 'Continuă fișa' : 'Completează fișa'}
+                    </button>
+                    {a.status !== 'Anulată' && a.status !== 'Finalizată' && (
+                      <button className="btn-d" style={{ padding: '8px 12px' }} onClick={() => updateStatus(a.id, 'Anulată')}>Anulează</button>
+                    )}
+                    {a.status === 'În așteptare' && (
+                      <button className="btn-s" style={{ padding: '8px 12px' }} onClick={() => updateStatus(a.id, 'Confirmată')}>Confirmă</button>
+                    )}
+                    {a.status === 'Confirmată' && (
+                      <button className="btn-s" style={{ padding: '8px 12px' }} onClick={() => updateStatus(a.id, 'Finalizată')}>Finalizează</button>
+                    )}
                   </div>
-                  <Tag v={ATYPE[a.type] || 'blue'} dot>{a.type}</Tag>
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {a.status !== 'Anulată' && a.status !== 'Finalizată' && (
-                    <button className="btn-d" style={{ flex: 1, justifyContent: 'center' }} onClick={() => updateStatus(a.id, 'Anulată')}>Anulează</button>
-                  )}
-                  {a.status === 'Confirmată' && (
-                    <button className="btn-s" style={{ flex: 1, justifyContent: 'center' }} onClick={() => updateStatus(a.id, 'Finalizată')}>Finalizează</button>
-                  )}
-                  {a.status === 'În așteptare' && (
-                    <button className="btn-s" style={{ flex: 1, justifyContent: 'center' }} onClick={() => updateStatus(a.id, 'Confirmată')}>Confirmă</button>
-                  )}
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const Records = () => {
+    const [flt, setFlt] = useState('all')
+    const list = medRecords.filter(r => flt === 'all' || r.status === flt)
+    return (
+      <div className="fade-up">
+        <div style={{ display: 'flex', gap: 6, marginBottom: 14, overflowX: 'auto', paddingBottom: 4 }}>
+          {[['all','Toate'],['pending','Noi'],['draft','Ciorne'],['completed','Completate']].map(([v,l]) => (
+            <button key={v} className={`chip ${flt === v ? 'on' : ''}`} onClick={() => setFlt(v)}>{l}</button>
+          ))}
+        </div>
+        {list.length === 0 ? <div className="card"><Empty icon="clip" title="Nicio fișă" desc="Fișele se creează automat la programări" /></div> : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {list.map(r => {
+              const appt = appts.find(a => a.id === r.appointmentId)
+              return (
+                <div key={r.id} className="card" style={{ padding: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: T.r12, background: r.status === 'completed' ? T.successBg : T.warningBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Ic n="clip" s={18} c={r.status === 'completed' ? T.success : T.warning} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700 }}>{r.patientName}</div>
+                      <div style={{ fontSize: 12, color: T.inkLight }}>{appt ? `${fmt(appt.date)} · ${appt.time}` : '—'}</div>
+                      {r.diagnostic && <div style={{ fontSize: 12, color: T.blue, marginTop: 2 }}>Dx: {r.diagnostic.slice(0, 60)}{r.diagnostic.length > 60 ? '...' : ''}</div>}
+                    </div>
+                    <Tag v={r.status === 'completed' ? 'green' : r.status === 'draft' ? 'yellow' : 'default'} dot>
+                      {r.status === 'completed' ? 'Completată' : r.status === 'draft' ? 'Ciornă' : 'Nouă'}
+                    </Tag>
+                  </div>
+                  <button className="btn-p" style={{ width: '100%', justifyContent: 'center', fontSize: 13 }} onClick={() => setOpenRecord({ appt, record: r })}>
+                    <Ic n="edit" s={13} c="#fff" /> {r.status === 'completed' ? 'Vizualizează / Editează' : 'Completează fișa'}
+                  </button>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
@@ -212,69 +287,8 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
     )
   }
 
-  const RxD = () => {
-    const [show, setShow] = useState(false)
-    const [form, setForm] = useState({ patientId: pats[0]?.id || 0, diagnosis: '', medicines: '' })
-    const add = async () => {
-      if (!form.diagnosis || !form.medicines) return
-      const p = pats.find(x => x.id === form.patientId)
-      await supabase.from('prescriptions').insert({
-        patient_id: form.patientId, doctor_id: doc.id,
-        patient_name: p?.name || '', doctor_name: doc.name,
-        date: new Date().toISOString().slice(0, 10),
-        medicines: form.medicines, diagnosis: form.diagnosis, status: 'Activă',
-      })
-      setShow(false)
-      setForm({ patientId: pats[0]?.id || 0, diagnosis: '', medicines: '' })
-      showToast('Rețetă emisă'); await fetchAll()
-    }
-    return (
-      <div className="fade-up">
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
-          <button className="btn-p" onClick={() => setShow(true)}><Ic n="plus" s={15} c="#fff" /> Rețetă</button>
-        </div>
-        {show && (
-          <div className="ovl" onClick={e => e.target === e.currentTarget && setShow(false)}>
-            <div className="modal" style={{ padding: 24 }}>
-              <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 16 }}>Rețetă nouă</div>
-              <FG mob={mob}>
-                <FF label="Pacient" required>
-                  <select className="sel" value={form.patientId} onChange={e => setForm(f => ({ ...f, patientId: Number(e.target.value) }))}>
-                    {pats.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
-                </FF>
-                <FF label="Diagnostic" required><input className="inp" value={form.diagnosis} onChange={e => setForm(f => ({ ...f, diagnosis: e.target.value }))} /></FF>
-                <div style={{ gridColumn: '1/-1' }}>
-                  <FF label="Medicamente" required><textarea className="inp" rows={3} value={form.medicines} onChange={e => setForm(f => ({ ...f, medicines: e.target.value }))} /></FF>
-                </div>
-              </FG>
-              <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-                <button className="btn-g" onClick={() => setShow(false)}>Anulează</button>
-                <button className="btn-p" onClick={add} style={{ flex: 1 }} disabled={!form.diagnosis || !form.medicines}>Emite</button>
-              </div>
-            </div>
-          </div>
-        )}
-        {rxs.length === 0 ? <div className="card"><Empty icon="file" title="Nicio rețetă" desc="" /></div> : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {rxs.map(r => (
-              <div key={r.id} className="card" style={{ padding: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontWeight: 700 }}>{r.patientName}</span>
-                  <Tag v={r.status === 'Activă' ? 'green' : 'default'}>{r.status}</Tag>
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: T.blue }}>{r.diagnosis}</div>
-                <div style={{ fontSize: 13, color: T.inkMid, marginTop: 4 }}>{r.medicines}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  const titles = { dashboard: 'Cabinet Medical', patients: 'Pacienții Mei', appointments: 'Programări', messages: 'Mesaje', prescriptions: 'Rețete' }
-  const content = { dashboard: <Dash />, patients: <Pat />, appointments: <Appts />, messages: <MsgsD />, prescriptions: <RxD /> }
+  const titles = { dashboard: 'Cabinet Medical', patients: 'Pacienții Mei', appointments: 'Programări', records: 'Fișe de control', messages: 'Mesaje' }
+  const content = { dashboard: <Dash />, patients: <Pat />, appointments: <Appts />, records: <Records />, messages: <MsgsD /> }
 
   return (
     <div style={{ minHeight: '100vh', background: T.bg }}>
@@ -285,6 +299,7 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
       </main>
       <BNav items={nav} active={page} set={setPage} />
       {showQR && <QRModal onClose={() => setShowQR(false)} title={`Programare — ${doc.name}`} linkText={`doctor/${doc.id}`} />}
+      {openRecord && <MedicalRecordForm record={openRecord.record} appt={openRecord.appt} onClose={() => setOpenRecord(null)} onSaved={fetchAll} />}
     </div>
   )
 }

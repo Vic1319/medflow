@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { T, age, fmt, fmtS, mapDoctor, mapPatient, mapAppt, mapMsg, mapRx, mapService, ASTATUS } from '@/lib/theme'
+import { T, age, fmt, fmtS, mapDoctor, mapPatient, mapAppt, mapMsg, mapRx, mapService, generateSlots, ASTATUS } from '@/lib/theme'
 import { Ic, Tag, Av, Empty, FF, FG, Header, BNav, useIsMobile } from '@/components/ui'
 import HistoryReport from '@/components/HistoryReport'
 
@@ -25,7 +25,7 @@ export default function PatientApp({ profile, onLogout, showToast }) {
       supabase.from('appointments').select('*').eq('patient_id', pid),
       supabase.from('prescriptions').select('*').eq('patient_id', pid),
       supabase.from('messages').select('*').or(`and(from_role.eq.patient,from_id.eq.${pid}),and(to_role.eq.patient,to_id.eq.${pid})`),
-      supabase.from('doctors').select('*'),
+      supabase.from('doctors').select('*').eq('is_active', true),
       supabase.from('services').select('*').eq('is_active', true),
     ])
     if (patRes.data) setPat(mapPatient(patRes.data))
@@ -41,28 +41,57 @@ export default function PatientApp({ profile, onLogout, showToast }) {
 
   function BookingModal({ onClose, preDocId, preServiceId }) {
     const [selSvc, setSelSvc] = useState(preServiceId || svcs[0]?.id || 0)
-    const [selDoc, setSelDoc] = useState(preDocId || 0)
+    const [selDoc, setSelDoc] = useState(preDocId || docs[0]?.id || 0)
     const [date, setDate] = useState('')
-    const [time, setTime] = useState('09:00')
-    const avDocs = docs.filter(d => d.on && d.services?.includes(selSvc))
+    const [selSlot, setSelSlot] = useState('')
+    const [busySlots, setBusySlots] = useState([])
+    const [loadingSlots, setLoadingSlots] = useState(false)
+
+    // Toți doctorii activi — fără filtru pe servicii pentru a include și doctorii noi
+    const avDocs = docs.filter(d => d.on)
 
     useEffect(() => {
       if (!preDocId && avDocs.length > 0 && !avDocs.find(d => d.id === selDoc)) setSelDoc(avDocs[0].id)
-    }, [selSvc])
+    }, [])
+
+    // Când se schimbă doctorul sau data, fetch sloturi ocupate
+    useEffect(() => {
+      if (!selDoc || !date) { setBusySlots([]); setSelSlot(''); return }
+      setLoadingSlots(true)
+      supabase.from('appointments').select('time').eq('doctor_id', selDoc).eq('date', date).neq('status', 'Anulată')
+        .then(({ data }) => {
+          setBusySlots((data || []).map(a => a.time))
+          setSelSlot('')
+          setLoadingSlots(false)
+        })
+    }, [selDoc, date])
+
+    const docData = docs.find(d => d.id === selDoc)
+    const dayName = date ? ['Duminică','Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă'][new Date(date + 'T12:00').getDay()] : null
+    const scheduleStr = dayName && docData?.schedule?.[dayName]
+    const allSlots = generateSlots(scheduleStr)
+    const freeSlots = allSlots.filter(s => !busySlots.includes(s))
 
     const book = async () => {
-      if (!date || !selDoc) return
+      if (!date || !selDoc || !selSlot) return
       const doc = docs.find(d => d.id === selDoc)
       const svc = svcs.find(s => s.id === selSvc)
       const { error } = await supabase.from('appointments').insert({
         patient_name: pat.name, patient_id: pat.id,
         doctor_name: doc.name, doctor_id: doc.id,
-        date, time, type: svc?.name || 'Consultație',
-        status: 'În așteptare', room: 'Sala 1', service_id: selSvc,
+        date, time: selSlot,
+        type: svc?.name || 'Consultație',
+        status: 'În așteptare', room: 'Sala 1',
+        service_id: selSvc || null,
       })
-      if (!error) { showToast('Programare creată!'); await fetchAll(); onClose() }
-      else showToast('Eroare la programare', 'error')
+      if (!error) {
+        showToast('Programare creată!')
+        await fetchAll()
+        onClose()
+      } else showToast('Eroare la programare', 'error')
     }
+
+    const today = new Date().toISOString().slice(0, 10)
 
     return (
       <div className="ovl" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -71,22 +100,62 @@ export default function PatientApp({ profile, onLogout, showToast }) {
             <span style={{ fontWeight: 700, fontSize: 17 }}>Programare nouă</span>
             <button className="btn-g" style={{ padding: 6 }} onClick={onClose}><Ic n="x" s={15} /></button>
           </div>
-          <FG mob={mob}>
-            {!preServiceId && <FF label="Serviciu" required>
-              <select className="sel" value={selSvc} onChange={e => setSelSvc(Number(e.target.value))}>
-                {svcs.map(s => <option key={s.id} value={s.id}>{s.name} — {s.price}</option>)}
-              </select>
-            </FF>}
-            {!preDocId && <FF label="Medic" required>
-              <select className="sel" value={selDoc} onChange={e => setSelDoc(Number(e.target.value))}>
-                {avDocs.length === 0 ? <option>Niciun medic disponibil</option> : avDocs.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-              </select>
-            </FF>}
-            <FF label="Data" required><input className="inp" type="date" value={date} onChange={e => setDate(e.target.value)} /></FF>
-            <FF label="Ora"><input className="inp" type="time" value={time} onChange={e => setTime(e.target.value)} /></FF>
-          </FG>
-          <button className="btn-p" style={{ width: '100%', justifyContent: 'center', marginTop: 16, padding: 14, background: `linear-gradient(135deg,${T.success},#047857)` }} onClick={book} disabled={!date || !selDoc}>
-            Confirmă programarea
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {!preServiceId && svcs.length > 0 && (
+              <FF label="Serviciu">
+                <select className="sel" value={selSvc} onChange={e => setSelSvc(Number(e.target.value))}>
+                  <option value={0}>— Selectează serviciu —</option>
+                  {svcs.map(s => <option key={s.id} value={s.id}>{s.name} — {s.price}</option>)}
+                </select>
+              </FF>
+            )}
+            {!preDocId && (
+              <FF label="Medic" required>
+                <select className="sel" value={selDoc} onChange={e => setSelDoc(Number(e.target.value))}>
+                  {avDocs.length === 0 ? <option>Niciun medic disponibil</option> : avDocs.map(d => <option key={d.id} value={d.id}>{d.name} — {d.spec}</option>)}
+                </select>
+              </FF>
+            )}
+            <FF label="Data" required>
+              <input className="inp" type="date" min={today} value={date} onChange={e => setDate(e.target.value)} />
+            </FF>
+
+            {date && selDoc && (
+              <FF label="Interval orar" required>
+                {loadingSlots ? (
+                  <div style={{ fontSize: 13, color: T.inkLight, padding: 10 }}>Se verifică disponibilitatea...</div>
+                ) : allSlots.length === 0 ? (
+                  <div style={{ fontSize: 13, color: T.warning, padding: 10, background: T.warningBg, borderRadius: T.r8 }}>
+                    Medicul nu lucrează în această zi. Alege altă dată.
+                  </div>
+                ) : freeSlots.length === 0 ? (
+                  <div style={{ fontSize: 13, color: T.danger, padding: 10, background: T.dangerBg, borderRadius: T.r8 }}>
+                    Toate intervalele sunt ocupate. Alege altă dată.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {allSlots.map(slot => {
+                      const busy = busySlots.includes(slot)
+                      const selected = selSlot === slot
+                      return (
+                        <button key={slot} onClick={() => !busy && setSelSlot(slot)} style={{
+                          padding: '6px 12px', borderRadius: T.r8, fontSize: 13, fontWeight: 600, cursor: busy ? 'not-allowed' : 'pointer', border: '1.5px solid',
+                          borderColor: busy ? T.border : selected ? T.blue : T.border,
+                          background: busy ? T.surfaceAlt : selected ? '#EFF6FF' : T.surface,
+                          color: busy ? T.inkFaint : selected ? T.blue : T.inkMid,
+                          textDecoration: busy ? 'line-through' : 'none',
+                          opacity: busy ? 0.5 : 1,
+                        }}>{slot}</button>
+                      )
+                    })}
+                  </div>
+                )}
+              </FF>
+            )}
+          </div>
+
+          <button className="btn-p" style={{ width: '100%', justifyContent: 'center', marginTop: 16, padding: 14, background: `linear-gradient(135deg,${T.success},#047857)` }} onClick={book} disabled={!date || !selDoc || !selSlot}>
+            Confirmă programarea {selSlot && `— ${selSlot}`}
           </button>
         </div>
       </div>
@@ -179,7 +248,7 @@ export default function PatientApp({ profile, onLogout, showToast }) {
 
   const Svcs = () => (
     <div className="fade-up">
-      {svcs.map(s => {
+      {svcs.length === 0 ? <div className="card"><Empty icon="svc" title="Niciun serviciu" desc="" /></div> : svcs.map(s => {
         const sd = docs.filter(d => d.on && d.services?.includes(s.id))
         return (
           <div key={s.id} className="card" style={{ padding: 16, marginBottom: 10 }}>
@@ -188,7 +257,7 @@ export default function PatientApp({ profile, onLogout, showToast }) {
               <Tag v="blue">{s.price}</Tag>
             </div>
             <div style={{ fontSize: 13, color: T.inkMid, marginBottom: 8 }}>{s.desc} · {s.duration}</div>
-            <div style={{ fontSize: 12, color: T.inkLight, marginBottom: 8 }}>Medici: {sd.length === 0 ? '—' : sd.map(d => d.name).join(', ')}</div>
+            <div style={{ fontSize: 12, color: T.inkLight, marginBottom: 8 }}>Medici: {sd.length === 0 ? 'Toți medicii disponibili' : sd.map(d => d.name).join(', ')}</div>
             <button className="btn-p" style={{ width: '100%', justifyContent: 'center', fontSize: 13, padding: 10, background: `linear-gradient(135deg,${T.success},#047857)` }} onClick={() => setShowBook({ svcId: s.id })}>
               <Ic n="cal" s={14} c="#fff" /> Programează
             </button>

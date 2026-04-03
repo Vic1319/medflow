@@ -155,8 +155,8 @@ values
 on conflict (id) do nothing;
 
 -- Resetează secvențele după insert cu ID-uri fixe
-select setval('doctors_id_seq',  (select max(id) from doctors));
-select setval('patients_id_seq', (select max(id) from patients));
+select setval('doctors_id_seq',       (select max(id) from doctors));
+select setval('patients_id_seq',      (select max(id) from patients));
 
 insert into services (id, name, description, price, duration, is_active)
 values
@@ -179,6 +179,7 @@ values
   (7, 'Ionescu Mihai',    103, 'Dr. Marinescu Radu',    4, '2024-09-10', '10:00', 'Consultație', 'Finalizată',    'Sala 2', 6),
   (8, 'Dumitrescu Elena', 102, 'Dr. Popa Gheorghe',     2, '2025-01-20', '09:00', 'Control',     'În așteptare', 'Sala 2', 2)
 on conflict (id) do nothing;
+select setval('appointments_id_seq', (select max(id) from appointments));
 
 insert into messages (id, from_name, from_role, from_id, to_name, to_role, to_id, text, date, is_read)
 values
@@ -187,6 +188,7 @@ values
   (3, 'Dr. Popa Gheorghe',     'doctor',  2,   'Dumitrescu Elena',     'patient', 102, 'Continuați tratamentul. Ne vedem la reevaluare.',                         '2025-01-13', false),
   (4, 'Dr. Popa Gheorghe',     'doctor',  2,   'Popescu Andrei',       'patient', 101, 'Consult OK. Totul în regulă.',                                            '2024-11-20', true)
 on conflict (id) do nothing;
+select setval('messages_id_seq', (select max(id) from messages));
 
 insert into prescriptions (id, patient_id, doctor_id, patient_name, doctor_name, date, medicines, diagnosis, status)
 values
@@ -195,6 +197,8 @@ values
   (3, 101, 2, 'Popescu Andrei',   'Dr. Popa Gheorghe',     '2024-11-20', 'Paracetamol 250mg — la nevoie',         'Febră virală',           'Expirată'),
   (4, 103, 4, 'Ionescu Mihai',    'Dr. Marinescu Radu',    '2024-09-10', 'Evaluare EEG — programată',             'Screening neurologic',   'Expirată')
 on conflict (id) do nothing;
+select setval('prescriptions_id_seq', (select max(id) from prescriptions));
+select setval('services_id_seq',      (select max(id) from services));
 
 -- ─── CUM SĂ CREEZI CONTUL ADMIN ───────────────────────────
 -- 1. Mergi la Supabase Dashboard → Authentication → Users → Add user
