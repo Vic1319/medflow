@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { T, age, fmtS, mapDoctor, mapPatient, mapAppt, mapMsg, mapRx, mapService, mapDelReq, PSTATUS, ASTATUS } from '@/lib/theme'
 import { Ic, Tag, Av, Empty, FF, FG, StatBox, Header, BNav, QRModal, useIsMobile } from '@/components/ui'
 import HistoryReport from '@/components/HistoryReport'
+import ScheduleEditor from '@/components/ScheduleEditor'
 
 export default function AdminApp({ profile, onLogout, showToast }) {
   const mob = useIsMobile()
@@ -19,6 +20,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
   const [showAddSvc, setShowAddSvc] = useState(false)
   const [svcForm, setSvcForm] = useState({ name: '', desc: '', price: '', duration: '', docIds: [] })
   const [showSvcQR, setShowSvcQR] = useState(false)
+  const [editScheduleDoc, setEditScheduleDoc] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const fetchAll = useCallback(async () => {
@@ -175,6 +177,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
                     ))}
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
+                    <button className="btn-g" style={{ flex: 1, justifyContent: 'center', fontSize: 12 }} onClick={() => setEditScheduleDoc(d)}><Ic n="cal" s={13} /> Program</button>
                     <button className="btn-g" style={{ flex: 1, justifyContent: 'center', fontSize: 12 }} onClick={() => toggleDoc(d)}>{d.on ? 'Dezactivează' : 'Activează'}</button>
                     <button className="btn-d" style={{ padding: '8px 10px' }} onClick={() => deleteDoc(d.id)}><Ic n="trash" s={13} /></button>
                   </div>
@@ -362,6 +365,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
       </main>
       <BNav items={nav} active={page} set={setPage} />
       {showSvcQR && <QRModal onClose={() => setShowSvcQR(false)} title="Programare — Servicii" linkText="services" />}
+      {editScheduleDoc && <ScheduleEditor doc={editScheduleDoc} onClose={() => setEditScheduleDoc(null)} onSaved={() => { fetchAll(); showToast('Program salvat!') }} />}
     </div>
   )
 }

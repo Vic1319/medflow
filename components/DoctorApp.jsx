@@ -5,6 +5,7 @@ import { T, age, fmt, fmtS, mapDoctor, mapPatient, mapAppt, mapMsg, mapRx, mapMe
 import { Ic, Tag, Av, Empty, FF, FG, StatBox, Header, BNav, QRModal, useIsMobile } from '@/components/ui'
 import HistoryReport from '@/components/HistoryReport'
 import MedicalRecordForm from '@/components/MedicalRecordForm'
+import ScheduleEditor from '@/components/ScheduleEditor'
 
 export default function DoctorApp({ profile, onLogout, showToast }) {
   const mob = useIsMobile()
@@ -16,6 +17,7 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
   const [medRecords, setMedRecords] = useState([])
   const [page, setPage] = useState('dashboard')
   const [showQR, setShowQR] = useState(false)
+  const [showSchedule, setShowSchedule] = useState(false)
   const [viewPatId, setViewPatId] = useState(null)
   const [openRecord, setOpenRecord] = useState(null) // { appt, record|null }
   const [loading, setLoading] = useState(true)
@@ -101,6 +103,7 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
         <button className="btn-g" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setShowQR(true)}><Ic n="qr" s={14} /> Link & QR</button>
+        <button className="btn-g" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setShowSchedule(true)}><Ic n="cal" s={14} /> Program lucru</button>
         <button className="btn-p" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setPage('records')}><Ic n="clip" s={14} c="#fff" /> Fișe de completat ({pendingRecords})</button>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : 'repeat(4,1fr)', gap: mob ? 10 : 16 }}>
@@ -299,6 +302,7 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
       </main>
       <BNav items={nav} active={page} set={setPage} />
       {showQR && <QRModal onClose={() => setShowQR(false)} title={`Programare — ${doc.name}`} linkText={`doctor/${doc.id}`} />}
+      {showSchedule && <ScheduleEditor doc={doc} onClose={() => setShowSchedule(false)} onSaved={() => { fetchAll(); showToast('Program salvat!') }} />}
       {openRecord && <MedicalRecordForm record={openRecord.record} appt={openRecord.appt} onClose={() => setOpenRecord(null)} onSaved={fetchAll} />}
     </div>
   )
