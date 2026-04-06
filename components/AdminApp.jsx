@@ -19,6 +19,8 @@ export default function AdminApp({ profile, onLogout, showToast }) {
   const [viewPatId, setViewPatId] = useState(null)
   const [showAddSvc, setShowAddSvc] = useState(false)
   const [svcForm, setSvcForm] = useState({ name: '', desc: '', price: '', duration: '', docIds: [] })
+  const [editSvc, setEditSvc] = useState(null)
+  const [editSvcForm, setEditSvcForm] = useState({ name: '', desc: '', price: '', duration: '', docIds: [] })
   const [showSvcQR, setShowSvcQR] = useState(false)
   const [editScheduleDoc, setEditScheduleDoc] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -252,6 +254,20 @@ export default function AdminApp({ profile, onLogout, showToast }) {
       await supabase.from('services').delete().eq('id', id)
       showToast('Șters', 'info'); await fetchAll()
     }
+    const openEdit = (s) => {
+      const sd = docs.filter(d => d.services?.includes(s.id)).map(d => d.id)
+      setEditSvc(s); setEditSvcForm({ name: s.name, desc: s.desc || '', price: s.price || '', duration: s.duration || '', docIds: sd })
+    }
+    const saveEdit = async () => {
+      await supabase.from('services').update({ name: editSvcForm.name, description: editSvcForm.desc, price: editSvcForm.price, duration: editSvcForm.duration }).eq('id', editSvc.id)
+      for (const d of docs) {
+        const hasSvc = d.services?.includes(editSvc.id)
+        const shouldHave = editSvcForm.docIds.includes(d.id)
+        if (hasSvc && !shouldHave) await supabase.from('doctors').update({ services: d.services.filter(x => x !== editSvc.id) }).eq('id', d.id)
+        if (!hasSvc && shouldHave) await supabase.from('doctors').update({ services: [...(d.services || []), editSvc.id] }).eq('id', d.id)
+      }
+      setEditSvc(null); showToast('Salvat!'); await fetchAll()
+    }
     return (
       <div className="fade-up">
         <div style={{ display: 'flex', gap: 8, marginBottom: 14, justifyContent: 'space-between' }}>
@@ -273,11 +289,39 @@ export default function AdminApp({ profile, onLogout, showToast }) {
               <div style={{ fontSize: 12, color: T.inkLight, marginBottom: 8 }}>Medici: {sd.length === 0 ? '—' : sd.map(d => d.name).join(', ')}</div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <button className="btn-g" style={{ flex: 1, justifyContent: 'center', fontSize: 12 }} onClick={() => toggleSvc(s)}>{s.active ? 'Dezactivează' : 'Activează'}</button>
+                <button className="btn-g" style={{ padding: '8px 10px' }} onClick={() => openEdit(s)}><Ic n="edit" s={13} /></button>
                 <button className="btn-d" style={{ padding: '8px 10px' }} onClick={() => deleteSvc(s.id)}><Ic n="trash" s={13} /></button>
               </div>
             </div>
           )
         })}
+        {editSvc && (
+          <div className="ovl" onClick={e => e.target === e.currentTarget && setEditSvc(null)}>
+            <div className="modal" style={{ padding: 24 }}>
+              <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 16 }}>Editează — {editSvc.name}</div>
+              <FG mob={mob}>
+                <FF label="Denumire" required><input className="inp" value={editSvcForm.name} onChange={e => setEditSvcForm(f => ({ ...f, name: e.target.value }))} /></FF>
+                <FF label="Preț"><input className="inp" placeholder="150 RON" value={editSvcForm.price} onChange={e => setEditSvcForm(f => ({ ...f, price: e.target.value }))} /></FF>
+                <FF label="Durată"><input className="inp" placeholder="30 min" value={editSvcForm.duration} onChange={e => setEditSvcForm(f => ({ ...f, duration: e.target.value }))} /></FF>
+                <div style={{ gridColumn: '1/-1' }}><FF label="Descriere"><textarea className="inp" rows={2} value={editSvcForm.desc} onChange={e => setEditSvcForm(f => ({ ...f, desc: e.target.value }))} /></FF></div>
+                <div style={{ gridColumn: '1/-1' }}>
+                  <FF label="Medici">
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                      {docs.map(d => {
+                        const sel = editSvcForm.docIds.includes(d.id)
+                        return <button key={d.id} className={`chip ${sel ? 'on' : ''}`} onClick={() => setEditSvcForm(f => ({ ...f, docIds: sel ? f.docIds.filter(x => x !== d.id) : [...f.docIds, d.id] }))}>{d.name.replace('Dr. ', '')}</button>
+                      })}
+                    </div>
+                  </FF>
+                </div>
+              </FG>
+              <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+                <button className="btn-g" onClick={() => setEditSvc(null)}>Anulează</button>
+                <button className="btn-p" onClick={saveEdit} style={{ flex: 1 }} disabled={!editSvcForm.name}>Salvează</button>
+              </div>
+            </div>
+          </div>
+        )}
         {showAddSvc && (
           <div className="ovl" onClick={e => e.target === e.currentTarget && setShowAddSvc(false)}>
             <div className="modal" style={{ padding: 24 }}>

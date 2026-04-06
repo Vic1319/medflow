@@ -158,13 +158,9 @@ export function StatBox({ label, value, icon, color, bg, onClick }) {
 }
 
 export function Header({ name, variant, role, onLogout, mob }) {
-  const bg = role === 'admin' ? 'linear-gradient(135deg,#EA580C,#9A3412)' : role === 'doctor' ? `linear-gradient(135deg,${T.cyan},${T.navy})` : `linear-gradient(135deg,${T.success},#047857)`
   return (
     <header style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 10, position: 'sticky', top: 0, zIndex: 40 }}>
-      <div style={{ width: 32, height: 32, borderRadius: T.r8, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,.5)" strokeWidth="1.5"/><path d="M12 7v5l3 3" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
-      </div>
-      <span style={{ fontWeight: 800, fontSize: 15, color: T.navy }}>MedFlow</span>
+      <img src="/logo.webp" alt="MedFlow" style={{ height: 32, width: 'auto', objectFit: 'contain' }} />
       <Tag v={role === 'admin' ? 'orange' : role === 'doctor' ? 'blue' : 'green'}>{role === 'admin' ? 'Admin' : role === 'doctor' ? 'Medic' : 'Pacient'}</Tag>
       <div style={{ flex: 1 }} />
       <Av name={name} size={28} variant={variant} />
