@@ -6,6 +6,7 @@ import { Ic, Tag, FF, FG, useIsMobile } from '@/components/ui'
 
 export default function AuthScreen({ showToast }) {
   const mob = useIsMobile()
+  const [phase, setPhase] = useState(0) // 0=splash mare, 1=shrink+fade, 2=gata
   const [mode, setMode] = useState('login') // 'login' | 'admin' | 'register'
   const [role, setRole] = useState(null)    // 'doctor' | 'patient'
   const [email, setEmail] = useState('')
@@ -25,6 +26,12 @@ export default function AuthScreen({ showToast }) {
   const [rDoc, setRDoc] = useState('')
   const [rGroup, setRGroup] = useState('A+')
   const [doctors, setDoctors] = useState([])
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setPhase(1), 1000)
+    const t2 = setTimeout(() => setPhase(2), 1600)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
+  }, [])
 
   useEffect(() => {
     supabase.from('doctors').select('id, name').eq('is_active', true).then(({ data }) => {
@@ -63,6 +70,11 @@ export default function AuthScreen({ showToast }) {
     showToast('Cont creat cu succes!')
   }
 
+  const splash = (
+    <div style={{ position: 'fixed', inset: 0, background: `linear-gradient(135deg,${T.navy} 0%,${T.blueDark} 40%,${T.blue} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, opacity: phase >= 1 ? 0 : 1, pointerEvents: phase >= 2 ? 'none' : 'all', transition: 'opacity .55s ease' }}>
+      <img src="/logo.webp" alt="MedFlow" style={{ height: phase >= 1 ? 60 : 130, filter: 'drop-shadow(0 4px 24px rgba(0,0,0,.35))', transition: 'height .55s cubic-bezier(.34,1.2,.64,1)', animation: phase === 0 ? 'splashIn .7s cubic-bezier(.34,1.56,.64,1) both' : 'none' }} />
+    </div>
+  )
   const bgS = { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg,${T.navy} 0%,${T.blueDark} 40%,${T.blue} 100%)`, padding: 20, position: 'relative' }
   const admBtn = (
     <button onClick={() => { setMode('admin'); setErr('') }} style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.15)', borderRadius: T.r8, color: 'rgba(255,255,255,.5)', padding: '6px 14px', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -77,9 +89,9 @@ export default function AuthScreen({ showToast }) {
 
   // Role selection
   if (mode === 'login' && !role) return (
-    <div style={bgS}>{admBtn}
-      <div className="fade-up" style={{ maxWidth: 520, width: '100%', textAlign: 'center' }}>
-        <img src="/logo.webp" alt="MedFlow" style={{ height: mob ? 60 : 80, marginBottom: 16, animation: 'splashIn .8s cubic-bezier(.34,1.56,.64,1) both', filter: 'brightness(0) invert(1)' }} />
+    <div style={bgS}>{splash}{admBtn}
+      <div style={{ maxWidth: 520, width: '100%', textAlign: 'center', opacity: phase >= 1 ? 1 : 0, transition: 'opacity .5s .15s ease' }}>
+        <img src="/logo.webp" alt="MedFlow" style={{ height: mob ? 60 : 80, marginBottom: 16, filter: 'drop-shadow(0 2px 12px rgba(0,0,0,.3))' }} />
         <p style={{ color: 'rgba(255,255,255,.6)', fontSize: 15, marginBottom: 32 }}>Clinică Pediatrică — Cabinet Digital</p>
         <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: 16 }}>
           <div className="lcard card" onClick={() => setRole('doctor')} style={{ padding: mob ? 24 : 32 }}>
