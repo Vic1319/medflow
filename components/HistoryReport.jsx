@@ -237,7 +237,7 @@ export default function HistoryReport({ title, patient, doctorFilter, allAppts, 
                   <div style={{ flex: 1 }}><div style={{ fontWeight: 700, fontSize: 14 }}>{d.name}</div><div style={{ fontSize: 12, color: T.inkMid }}>{d.spec}</div></div>
                   {d.name === patient.doctor && <Tag v="cyan" dot>Curant</Tag>}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : 'repeat(4,1fr)', gap: 8 }}>
                   {[['Vizite', dAppts.length, T.blue], ['Finalizate', dAppts.filter(a => a.status === 'Finalizată').length, T.success], ['Rețete', dRx.length, T.purple], ['Fișe', dRecs.length, T.cyan]].map(([l, v, c]) => (
                     <div key={l} style={{ background: T.surfaceAlt, borderRadius: T.r8, padding: 8, textAlign: 'center', border: `1px solid ${T.border}` }}>
                       <div style={{ fontSize: 16, fontWeight: 800, color: c }}>{v}</div>

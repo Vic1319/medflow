@@ -116,10 +116,10 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
           </div>
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button className="btn-g" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setShowQR(true)}><Ic n="qr" s={14} /> Link & QR</button>
-        <button className="btn-g" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setShowSchedule(true)}><Ic n="cal" s={14} /> Program lucru</button>
-        <button className="btn-p" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setPage('records')}><Ic n="clip" s={14} c="#fff" /> Fișe de completat ({pendingRecords})</button>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button className="btn-g" style={{ flex: 1, justifyContent: 'center', minWidth: mob ? 'calc(50% - 4px)' : 'auto' }} onClick={() => setShowQR(true)}><Ic n="qr" s={14} /> Link & QR</button>
+        <button className="btn-g" style={{ flex: 1, justifyContent: 'center', minWidth: mob ? 'calc(50% - 4px)' : 'auto' }} onClick={() => setShowSchedule(true)}><Ic n="cal" s={14} /> Program lucru</button>
+        <button className="btn-p" style={{ flex: 1, justifyContent: 'center', minWidth: mob ? '100%' : 'auto' }} onClick={() => setPage('records')}><Ic n="clip" s={14} c="#fff" /> Fișe ({pendingRecords})</button>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : 'repeat(4,1fr)', gap: mob ? 10 : 16 }}>
         {[{ label: 'Pacienți', value: pats.length, icon: 'users', color: T.blue, bg: '#EFF6FF', p: 'patients' },

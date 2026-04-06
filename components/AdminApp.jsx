@@ -177,7 +177,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
                       <div style={{ fontSize: 12, color: T.inkMid }}>{d.spec} · {d.email}</div>
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 12 }}>
                     {[['Pac.', dPats, T.blue], ['Prog.', dAppts, T.cyan], ['Exp.', d.exp, T.purple]].map(([k, v, c]) => (
                       <div key={k} style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: T.r8, padding: 8, textAlign: 'center' }}>
                         <div style={{ fontSize: 15, fontWeight: 800, color: c }}>{v}</div>
@@ -373,16 +373,17 @@ export default function AdminApp({ profile, onLogout, showToast }) {
         {filtered.length === 0 ? <div className="card"><Empty icon="clip" title="Nicio fișă" desc="" /></div> : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {filtered.map(r => (
-              <div key={r.id} className="card" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
-                <Av name={r.patientName} size={40} variant="blue" />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 15 }}>{r.patientName}</div>
-                  <div style={{ fontSize: 12, color: T.inkMid, marginTop: 2 }}>Medic: {r.doctorName}</div>
-                  <div style={{ fontSize: 12, color: T.inkLight }}>{r.createdAt ? new Date(r.createdAt).toLocaleDateString('ro-RO') : '—'}</div>
+              <div key={r.id} className="card" style={{ padding: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                  <Av name={r.patientName} size={36} variant="blue" />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.patientName}</div>
+                    <div style={{ fontSize: 12, color: T.inkMid }}>Dr. {r.doctorName}</div>
+                  </div>
+                  <Tag v={r.status === 'completed' ? 'green' : 'yellow'} dot>{r.status === 'completed' ? 'Finalizată' : 'Draft'}</Tag>
                 </div>
-                <Tag v={r.status === 'completed' ? 'green' : 'yellow'} dot>{r.status === 'completed' ? 'Finalizată' : 'Draft'}</Tag>
-                <button className="btn-g" style={{ padding: '8px 12px' }} onClick={() => setOpenRecord({ record: r, appt: appts.find(a => a.id === r.appointmentId) || { id: r.appointmentId, patient: r.patientName, doctor: r.doctorName, patientId: r.patientId, doctorId: r.doctorId } })}>
-                  <Ic n="eye" s={14} /> Vezi
+                <button className="btn-g" style={{ width: '100%', justifyContent: 'center', fontSize: 13 }} onClick={() => setOpenRecord({ record: r, appt: appts.find(a => a.id === r.appointmentId) || { id: r.appointmentId, patient: r.patientName, doctor: r.doctorName, patientId: r.patientId, doctorId: r.doctorId } })}>
+                  <Ic n="eye" s={14} /> Deschide fișa
                 </button>
               </div>
             ))}

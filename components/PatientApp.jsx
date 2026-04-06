@@ -379,14 +379,14 @@ export default function PatientApp({ profile, onLogout, showToast }) {
             return (
               <div key={d.id} className="card" style={{ padding: 16, cursor: 'pointer' }} onClick={() => setViewDocId(d.id)}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <Av name={d.name} size={48} variant={d.av || 'blue'} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700 }}>{d.name}</div>
+                  <Av name={d.name} size={44} variant={d.av || 'blue'} url={d.avatar_url} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
                     <div style={{ fontSize: 12, color: T.inkMid }}>{d.spec}</div>
-                    <div style={{ fontSize: 12, color: T.inkLight, marginTop: 2 }}>{da.length} vizite · {da.filter(a => a.status === 'Finalizată').length} finalizate</div>
+                    <div style={{ fontSize: 12, color: T.inkLight, marginTop: 2 }}>{da.length} vizite</div>
                   </div>
                   {d.name === pat.doctor && <Tag v="cyan" dot>Curant</Tag>}
-                  <Ic n="eye" s={16} c={T.blue} />
+                  <Ic n="right" s={14} c={T.blue} />
                 </div>
               </div>
             )

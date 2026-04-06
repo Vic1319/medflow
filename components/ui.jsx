@@ -17,6 +17,8 @@ export function GS() {
     <style>{`
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:${T.bg};color:${T.ink};overflow-x:hidden}input,select,textarea,button{font-family:inherit;font-size:16px}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:${T.borderMid};border-radius:3px}
+img{max-width:100%;height:auto}*{min-width:0}
+@media(max-width:400px){.btn-p,.btn-g,.btn-d,.btn-s{font-size:12px;padding:7px 10px;gap:3px}.bnav button{font-size:8px;padding:6px 1px}.inp,.sel{font-size:15px}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}.fade-up{animation:fadeUp .35s ease both}
 @keyframes splashIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
 @keyframes splashSub{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -53,6 +55,7 @@ const icPaths = {
   plus: <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
   trash: <><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></>,
   left: <><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></>,
+  right: <><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></>,
   x: <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
   chk: <><polyline points="20 6 9 17 4 12"/></>,
   alrt: <><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></>,
