@@ -16,6 +16,7 @@ export default function PatientApp({ profile, onLogout, showToast }) {
   const [page, setPage] = useState('dashboard')
   const [showBook, setShowBook] = useState(false)
   const [viewDocId, setViewDocId] = useState(null)
+  const [showEditProfile, setShowEditProfile] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const fetchAll = useCallback(async () => {
@@ -178,11 +179,109 @@ export default function PatientApp({ profile, onLogout, showToast }) {
   if (viewDocId) {
     const vDoc = docs.find(d => d.id === viewDocId)
     if (!vDoc) return null
+    const DoctorProfileView = () => {
+      const [selDate, setSelDate] = useState('')
+      const [busySl, setBusySl] = useState([])
+      const [loadSl, setLoadSl] = useState(false)
+      const docAppts = appts.filter(a => Number(a.doctorId) === Number(vDoc.id))
+      const days = ['Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă','Duminică']
+      const workDays = days.filter(d => vDoc.schedule?.[d])
+      useEffect(() => {
+        if (!selDate) { setBusySl([]); return }
+        setLoadSl(true)
+        supabase.from('appointments').select('time').eq('doctor_id', vDoc.id).eq('date', selDate).neq('status', 'Anulată')
+          .then(({ data }) => { setBusySl((data || []).map(a => a.time)); setLoadSl(false) })
+      }, [selDate])
+      const dayName = selDate ? ['Duminică','Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă'][new Date(selDate + 'T12:00').getDay()] : null
+      const allSl = generateSlots(dayName && vDoc.schedule?.[dayName])
+      const freeSl = allSl.filter(s => !busySl.includes(s))
+      const today = new Date().toISOString().slice(0, 10)
+      return (
+        <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <button className="btn-g" onClick={() => setViewDocId(null)} style={{ alignSelf: 'flex-start' }}><Ic n="left" s={14} /> Înapoi</button>
+          <div className="card" style={{ padding: mob ? 16 : 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+              <Av name={vDoc.name} size={mob ? 56 : 72} variant={vDoc.av || 'blue'} url={vDoc.avatar_url} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: mob ? 18 : 22, fontWeight: 800 }}>{vDoc.name}</div>
+                <div style={{ fontSize: 13, color: T.inkMid }}>{vDoc.spec}</div>
+                <div style={{ fontSize: 12, color: T.inkLight, marginTop: 4 }}>{vDoc.exp} experiență</div>
+                {vDoc.name === pat.doctor && <Tag v="cyan" dot style={{ marginTop: 6 }}>Medicul tău curant</Tag>}
+              </div>
+            </div>
+            {vDoc.phone && <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}><Ic n="ph" s={14} c={T.blue} /><span style={{ fontSize: 13, fontWeight: 600 }}>{vDoc.phone}</span></div>}
+            {vDoc.bio && <div style={{ fontSize: 13, color: T.inkMid, background: T.surfaceAlt, borderRadius: T.r8, padding: 12, border: `1px solid ${T.border}` }}>{vDoc.bio}</div>}
+          </div>
+          <div className="card" style={{ padding: 16 }}>
+            <div style={{ fontWeight: 700, marginBottom: 12 }}>Program de lucru</div>
+            {workDays.length === 0 ? <div style={{ fontSize: 13, color: T.inkLight }}>Program nesetat</div> : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {days.map(d => {
+                  const sch = vDoc.schedule?.[d]
+                  return sch ? (
+                    <div key={d} style={{ background: '#EFF6FF', borderRadius: T.r8, padding: '6px 12px', border: `1px solid ${T.blue}20` }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: T.blue }}>{d}</div>
+                      <div style={{ fontSize: 12, color: T.inkMid }}>{sch}</div>
+                    </div>
+                  ) : (
+                    <div key={d} style={{ background: T.surfaceAlt, borderRadius: T.r8, padding: '6px 12px', border: `1px solid ${T.border}` }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: T.inkFaint }}>{d}</div>
+                      <div style={{ fontSize: 12, color: T.inkFaint }}>Liber</div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+          <div className="card" style={{ padding: 16 }}>
+            <div style={{ fontWeight: 700, marginBottom: 12 }}>Verifică disponibilitate</div>
+            <FF label="Alege data"><input className="inp" type="date" min={today} value={selDate} onChange={e => setSelDate(e.target.value)} /></FF>
+            {selDate && (
+              <div style={{ marginTop: 12 }}>
+                {loadSl ? <div style={{ fontSize: 13, color: T.inkLight }}>Se verifică...</div>
+                : allSl.length === 0 ? <div style={{ fontSize: 13, color: T.warning, background: T.warningBg, borderRadius: T.r8, padding: 10 }}>Medicul nu lucrează în această zi.</div>
+                : (
+                  <div>
+                    <div style={{ fontSize: 12, color: T.inkMid, marginBottom: 8 }}>{freeSl.length} sloturi libere din {allSl.length}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {allSl.map(s => {
+                        const busy = busySl.includes(s)
+                        return <span key={s} style={{ padding: '5px 10px', borderRadius: T.r8, fontSize: 12, fontWeight: 600, background: busy ? T.surfaceAlt : T.successBg, color: busy ? T.inkFaint : T.success, border: `1px solid ${busy ? T.border : T.success}40`, textDecoration: busy ? 'line-through' : 'none', opacity: busy ? .5 : 1 }}>{s}</span>
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            <button className="btn-p" style={{ width: '100%', justifyContent: 'center', marginTop: 14, background: `linear-gradient(135deg,${T.success},#047857)` }} onClick={() => setShowBook({ docId: vDoc.id })}>
+              <Ic n="cal" s={14} c="#fff" /> Programează-te cu {vDoc.name.replace('Dr. ', 'Dr. ')}
+            </button>
+          </div>
+          {docAppts.length > 0 && (
+            <div className="card" style={{ padding: 16 }}>
+              <div style={{ fontWeight: 700, marginBottom: 12 }}>Istoricul tău cu acest medic ({docAppts.length} vizite)</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[...docAppts].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5).map(a => (
+                  <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: `1px solid ${T.border}` }}>
+                    <div style={{ background: `linear-gradient(135deg,${T.blue},${T.cyan})`, borderRadius: T.r8, padding: '5px 9px', textAlign: 'center', minWidth: 44 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>{a.time}</div>
+                      <div style={{ fontSize: 9, color: 'rgba(255,255,255,.7)' }}>{a.date?.slice(5)}</div>
+                    </div>
+                    <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>{a.type}</div></div>
+                    <Tag v={ASTATUS[a.status] || 'default'} dot>{a.status}</Tag>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )
+    }
     return (
       <div style={{ minHeight: '100vh', background: T.bg }}>
-        <Header name={pat.name} variant="green" role="patient" onLogout={onLogout} mob={mob} />
+        <Header name={pat.name} variant="green" role="patient" onLogout={onLogout} mob={mob} url={pat.avatar_url} />
         <main style={{ padding: mob ? '16px 16px 80px' : '24px 28px', maxWidth: 700, margin: '0 auto' }}>
-          <HistoryReport title={`Istoric cu ${vDoc.name}`} patient={pat} doctorFilter={vDoc.id} allAppts={appts} allRx={rxs} allMsgs={msgs} allDocs={docs} mob={mob} onBack={() => setViewDocId(null)} />
+          <DoctorProfileView />
         </main>
         <BNav items={nav} active={page} set={p => { setViewDocId(null); setPage(p) }} />
         {showBook && <BookingModal onClose={() => setShowBook(false)} preDocId={typeof showBook === 'object' ? showBook.docId : null} preServiceId={typeof showBook === 'object' ? showBook.svcId : null} />}
@@ -194,11 +293,14 @@ export default function PatientApp({ profile, onLogout, showToast }) {
     <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', gap: mob ? 14 : 20 }}>
       <div className="card" style={{ padding: mob ? 16 : 24, background: `linear-gradient(135deg,${T.success},#047857)`, color: '#fff', border: 'none' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Av name={pat.name} size={mob ? 50 : 64} variant="green" />
-          <div>
+          <Av name={pat.name} size={mob ? 50 : 64} variant="green" url={pat.avatar_url} />
+          <div style={{ flex: 1 }}>
             <div style={{ fontSize: mob ? 18 : 22, fontWeight: 800 }}>Bun venit, {pat.name.split(' ')[0]}</div>
             <div style={{ fontSize: 13, opacity: .8, marginTop: 3 }}>{pat.name}{pat.dob ? ` · ${age(pat.dob)} ani` : ''}</div>
           </div>
+          <button onClick={() => setShowEditProfile(true)} style={{ background: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.3)', borderRadius: T.r8, color: '#fff', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600 }}>
+            <Ic n="edit" s={13} c="#fff" /> Editează
+          </button>
         </div>
       </div>
       <button className="btn-p" style={{ width: '100%', justifyContent: 'center', padding: 14, background: `linear-gradient(135deg,${T.success},#047857)` }} onClick={() => setShowBook(true)}>
@@ -329,6 +431,64 @@ export default function PatientApp({ profile, onLogout, showToast }) {
     )
   }
 
+  const EditProfileModal = () => {
+    const [form, setForm] = useState({ name: pat.name || '', phone: pat.phone || '', dob: pat.dob || '', group: pat.group || 'A+', allergies: pat.allergies || '', notes: pat.notes || '' })
+    const [uploading, setUploading] = useState(false)
+    const save = async () => {
+      await supabase.from('patients').update({ name: form.name, phone: form.phone, dob: form.dob, blood_group: form.group, allergies: form.allergies, notes: form.notes }).eq('id', pat.id)
+      showToast('Profil actualizat!'); await fetchAll(); setShowEditProfile(false)
+    }
+    const uploadAvatar = async (file) => {
+      if (!file) return
+      setUploading(true)
+      const ext = file.name.split('.').pop()
+      const path = `patients/${pat.id}.${ext}`
+      const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+      if (!error) {
+        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
+        await supabase.from('patients').update({ avatar_url: urlData.publicUrl }).eq('id', pat.id)
+        showToast('Fotografie actualizată!'); await fetchAll()
+      } else showToast('Eroare upload', 'error')
+      setUploading(false)
+    }
+    return (
+      <div className="ovl" onClick={e => e.target === e.currentTarget && setShowEditProfile(false)}>
+        <div className="modal" style={{ padding: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+            <span style={{ fontWeight: 700, fontSize: 17 }}>Editează profil</span>
+            <button className="btn-g" style={{ padding: 6 }} onClick={() => setShowEditProfile(false)}><Ic n="x" s={15} /></button>
+          </div>
+          <div style={{ textAlign: 'center', marginBottom: 16 }}>
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <Av name={pat.name} size={72} variant="green" url={pat.avatar_url} />
+              <label style={{ position: 'absolute', bottom: 0, right: 0, background: T.blue, borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '2px solid #fff' }}>
+                <Ic n="edit" s={11} c="#fff" />
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => uploadAvatar(e.target.files[0])} />
+              </label>
+            </div>
+            {uploading && <div style={{ fontSize: 12, color: T.inkLight, marginTop: 6 }}>Se încarcă...</div>}
+          </div>
+          <FG mob={mob}>
+            <FF label="Nume complet"><input className="inp" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></FF>
+            <FF label="Telefon"><input className="inp" type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></FF>
+            <FF label="Data nașterii"><input className="inp" type="date" value={form.dob} onChange={e => setForm(f => ({ ...f, dob: e.target.value }))} /></FF>
+            <FF label="Grupă sanguină">
+              <select className="sel" value={form.group} onChange={e => setForm(f => ({ ...f, group: e.target.value }))}>
+                {['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(g => <option key={g}>{g}</option>)}
+              </select>
+            </FF>
+            <div style={{ gridColumn: '1/-1' }}><FF label="Alergii"><input className="inp" value={form.allergies} onChange={e => setForm(f => ({ ...f, allergies: e.target.value }))} /></FF></div>
+            <div style={{ gridColumn: '1/-1' }}><FF label="Observații"><textarea className="inp" rows={3} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></FF></div>
+          </FG>
+          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+            <button className="btn-g" onClick={() => setShowEditProfile(false)}>Anulează</button>
+            <button className="btn-p" style={{ flex: 1, background: `linear-gradient(135deg,${T.success},#047857)` }} onClick={save}>Salvează</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const titles = { dashboard: 'Cabinetul Meu', appointments: 'Programări', services: 'Servicii', doctors: 'Medicii Mei', messages: 'Mesaje' }
   const content = { dashboard: <Dash />, appointments: <Appts />, services: <Svcs />, doctors: <Doctors />, messages: <Messages /> }
 
@@ -341,6 +501,7 @@ export default function PatientApp({ profile, onLogout, showToast }) {
       </main>
       <BNav items={nav} active={page} set={setPage} />
       {showBook && <BookingModal onClose={() => setShowBook(false)} preDocId={typeof showBook === 'object' ? showBook.docId : null} preServiceId={typeof showBook === 'object' ? showBook.svcId : null} />}
+      {showEditProfile && <EditProfileModal />}
     </div>
   )
 }

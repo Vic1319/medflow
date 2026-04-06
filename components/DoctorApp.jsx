@@ -94,7 +94,22 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
     <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', gap: mob ? 14 : 20 }}>
       <div className="card" style={{ padding: mob ? 16 : 24, background: `linear-gradient(135deg,${T.blue},${T.blueDark})`, color: '#fff', border: 'none' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Av name={doc.name} size={mob ? 50 : 64} variant={doc.av} />
+          <div style={{ position: 'relative' }}>
+            <Av name={doc.name} size={mob ? 50 : 64} variant={doc.av} url={doc.avatar_url} />
+            <label style={{ position: 'absolute', bottom: 0, right: 0, background: 'rgba(255,255,255,.25)', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1.5px solid rgba(255,255,255,.5)' }}>
+              <Ic n="edit" s={10} c="#fff" />
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async e => {
+                const file = e.target.files[0]; if (!file) return
+                const path = `doctors/${doc.id}.${file.name.split('.').pop()}`
+                const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+                if (!error) {
+                  const { data: u } = supabase.storage.from('avatars').getPublicUrl(path)
+                  await supabase.from('doctors').update({ avatar_url: u.publicUrl }).eq('id', doc.id)
+                  showToast('Fotografie actualizată!'); await fetchAll()
+                } else showToast('Eroare upload', 'error')
+              }} />
+            </label>
+          </div>
           <div>
             <div style={{ fontSize: mob ? 18 : 22, fontWeight: 800 }}>Bun venit, {doc.name.replace('Dr. ', '')}</div>
             <div style={{ fontSize: 13, opacity: .8, marginTop: 3 }}>{doc.spec} · {doc.exp}</div>

@@ -105,7 +105,8 @@ export function Tag({ children, v = 'default', dot = false }) {
   return <span className="tag" style={{ background: s.bg, color: s.c }}>{dot && <span className="dot" style={{ background: s.d }} />}{children}</span>
 }
 
-export function Av({ name = '', size = 36, variant = 'blue' }) {
+export function Av({ name = '', size = 36, variant = 'blue', url }) {
+  if (url) return <img src={url} alt={name} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
   const ini = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
   const p = { blue: { f: T.blue, t: T.blueDark }, cyan: { f: T.cyan, t: T.blue }, purple: { f: '#7C3AED', t: '#4C1D95' }, green: { f: '#059669', t: '#065F46' }, orange: { f: '#EA580C', t: '#9A3412' } }
   const q = p[variant] || p.blue
