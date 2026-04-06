@@ -71,7 +71,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
       <div style={{ minHeight: '100vh', background: T.bg }}>
         <Header name="Admin Clinică" variant="orange" role="admin" onLogout={onLogout} mob={mob} />
         <main style={{ padding: mob ? '16px 16px 80px' : '24px 28px', maxWidth: 1000, margin: '0 auto' }}>
-          <HistoryReport title={`Raport complet — ${vPat.name}`} patient={vPat} doctorFilter={null} allAppts={appts} allRx={rxs} allMsgs={msgs} allDocs={docs} mob={mob} onBack={() => setViewPatId(null)} />
+          <HistoryReport title={`Raport complet — ${vPat.name}`} patient={vPat} doctorFilter={null} allAppts={appts} allRx={rxs} allMsgs={msgs} allDocs={docs} allMedRecords={medRecords} mob={mob} onBack={() => setViewPatId(null)} onOpenRecord={(appt) => setOpenRecord({ record: medRecords.find(r => r.appointmentId === appt.id) || null, appt })} />
         </main>
         <BNav items={nav} active={page} set={p => { setViewPatId(null); setPage(p) }} />
       </div>
