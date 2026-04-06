@@ -31,7 +31,7 @@ export function GS() {
 .sb{display:flex;align-items:center;gap:10px;background:${T.surface};border:1.5px solid ${T.border};border-radius:${T.rFull};padding:10px 16px}.sb:focus-within{border-color:${T.cyan}}.sb input{border:none;outline:none;background:transparent;font-size:16px;color:${T.ink};flex:1;min-width:0}.sb input::placeholder{color:${T.inkFaint}}
 .pbar{height:6px;border-radius:3px;background:${T.border};overflow:hidden}.pfill{height:100%;border-radius:3px;transition:width .6s ease}
 .av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
-.bnav{position:fixed;bottom:0;left:0;right:0;background:${T.surface};border-top:1px solid ${T.border};display:flex;z-index:50;padding:4px 0;padding-bottom:max(4px,env(safe-area-inset-bottom))}.bnav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:none;padding:8px 2px;font-size:10px;font-weight:600;color:${T.inkFaint};cursor:pointer;position:relative}.bnav button.on{color:${T.blue}}.bnav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;height:2.5px;background:linear-gradient(90deg,${T.blue},${T.cyan});border-radius:0 0 2px 2px}
+.bnav{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg,${T.blueDark},${T.blue});border-top:none;display:flex;z-index:50;padding:4px 0;padding-bottom:max(4px,env(safe-area-inset-bottom))}.bnav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:none;padding:8px 2px;font-size:10px;font-weight:600;color:rgba(255,255,255,.6);cursor:pointer;position:relative}.bnav button.on{color:#fff}.bnav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;height:2.5px;background:linear-gradient(90deg,${T.cyan},#fff);border-radius:0 0 2px 2px}
 .chip{padding:6px 14px;border-radius:${T.rFull};border:1.5px solid ${T.border};background:${T.surface};color:${T.inkMid};font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s}.chip.on{border-color:${T.blue};background:#EFF6FF;color:${T.blue}}
 .lcard{transition:all .2s;cursor:pointer;border:2px solid transparent}.lcard:hover{border-color:${T.cyan};transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,100,200,.1)}
 .toggle{position:relative;width:44px;height:24px;border-radius:12px;border:none;cursor:pointer;transition:background .2s;padding:0}.toggle .knob{position:absolute;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .2s}.toggle.on{background:${T.success}}.toggle.on .knob{left:22px}.toggle.off{background:${T.borderMid}}.toggle.off .knob{left:2px}
@@ -179,7 +179,7 @@ export function BNav({ items, active, set }) {
     <nav className="bnav">
       {items.map(i => (
         <button key={i.id} className={active === i.id ? 'on' : ''} onClick={() => set(i.id)}>
-          <Ic n={i.ic} s={20} c={active === i.id ? T.blue : T.inkFaint} />
+          <Ic n={i.ic} s={20} c={active === i.id ? '#fff' : 'rgba(255,255,255,.55)'} />
           <span>{i.l}</span>
           {i.badge > 0 && <span style={{ position: 'absolute', top: 4, right: '30%', width: 8, height: 8, borderRadius: '50%', background: T.danger }} />}
         </button>
