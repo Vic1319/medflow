@@ -24,6 +24,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
   const [editSvcForm, setEditSvcForm] = useState({ name: '', desc: '', price: '', duration: '', docIds: [] })
   const [showSvcQR, setShowSvcQR] = useState(false)
   const [editScheduleDoc, setEditScheduleDoc] = useState(null)
+  const [assignDocPat, setAssignDocPat] = useState(null)
   const [medRecords, setMedRecords] = useState([])
   const [openRecord, setOpenRecord] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -139,6 +140,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
                   <div style={{ fontSize: 12, color: T.inkLight }}>{age(p.dob)} ani · {p.doctor} · {pDocs} medici</div>
                 </div>
                 <Tag v={PSTATUS[p.status] || 'default'} dot>{p.status}</Tag>
+                <button className="btn-g" style={{ padding: '6px 8px', flexShrink: 0 }} onClick={e => { e.stopPropagation(); setAssignDocPat(p) }}><Ic n="steth" s={13} /></button>
                 <Ic n="eye" s={16} c={T.blue} />
                 <button className="btn-d" style={{ padding: '6px 8px' }} onClick={e => deletePat(p.id, e)}><Ic n="trash" s={13} /></button>
               </div>
@@ -430,6 +432,33 @@ export default function AdminApp({ profile, onLogout, showToast }) {
     )
   }
 
+  const AssignDocModal = ({ pat, onClose }) => {
+    const [selDoc, setSelDoc] = useState(docs.find(d => d.name === pat.doctor)?.id || docs[0]?.id || '')
+    const save = async () => {
+      const d = docs.find(x => x.id === Number(selDoc))
+      if (!d) return
+      await supabase.from('patients').update({ doctor_name: d.name }).eq('id', pat.id)
+      showToast('Medic curant actualizat!'); await fetchAll(); onClose()
+    }
+    return (
+      <div className="ovl" onClick={e => e.target === e.currentTarget && onClose()}>
+        <div className="modal" style={{ padding: 24, maxWidth: 380 }}>
+          <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 6 }}>Alocare medic curant</div>
+          <div style={{ fontSize: 13, color: T.inkMid, marginBottom: 16 }}>Pacient: <strong>{pat.name}</strong></div>
+          <FF label="Medic curant">
+            <select className="sel" value={selDoc} onChange={e => setSelDoc(e.target.value)}>
+              {docs.filter(d => d.on).map(d => <option key={d.id} value={d.id}>{d.name} — {d.spec}</option>)}
+            </select>
+          </FF>
+          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+            <button className="btn-g" onClick={onClose}>Anulează</button>
+            <button className="btn-p" style={{ flex: 1 }} onClick={save}>Salvează</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const titles = {
     dashboard: 'Panou Administrare', patients: `Pacienți (${pats.length})`,
     doctors: `Medici (${docs.length})`, appointments: `Programări (${appts.length})`,
@@ -448,6 +477,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
       <BNav items={nav} active={page} set={setPage} />
       {showSvcQR && <QRModal onClose={() => setShowSvcQR(false)} title="Programare — Servicii" linkText="services" />}
       {editScheduleDoc && <ScheduleEditor doc={editScheduleDoc} onClose={() => setEditScheduleDoc(null)} onSaved={() => { fetchAll(); showToast('Program salvat!') }} />}
+      {assignDocPat && <AssignDocModal pat={assignDocPat} onClose={() => setAssignDocPat(null)} />}
       {openRecord && <MedicalRecordForm record={openRecord.record} appt={openRecord.appt} onClose={() => setOpenRecord(null)} onSaved={fetchAll} />}
     </div>
   )

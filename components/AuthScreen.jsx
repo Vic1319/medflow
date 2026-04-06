@@ -160,11 +160,6 @@ export default function AuthScreen({ showToast }) {
             {rRole === 'patient' && <>
               <FF label="Nume pacient" required><input className="inp" value={rChild} onChange={e => setRChild(e.target.value)} /></FF>
               <FF label="Data nașterii"><input className="inp" type="date" value={rDob} onChange={e => setRDob(e.target.value)} /></FF>
-              <FF label="Medic">
-                <select className="sel" value={rDoc} onChange={e => setRDoc(e.target.value)}>
-                  {doctors.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
-                </select>
-              </FF>
               <FF label="Grupă sanguină">
                 <select className="sel" value={rGroup} onChange={e => setRGroup(e.target.value)}>
                   {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(g => <option key={g}>{g}</option>)}

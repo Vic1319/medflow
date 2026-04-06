@@ -4,10 +4,11 @@ import { T, age, fmt, fmtS, ASTATUS } from '@/lib/theme'
 import { Ic, Tag, Av, Div, Empty } from '@/components/ui'
 
 export default function HistoryReport({ title, patient, doctorFilter, allAppts, allRx, allMsgs, allDocs, allMedRecords = [], mob, onBack, onOpenRecord }) {
-  const pAppts = allAppts.filter(a => a.patientId === patient.id && (doctorFilter ? a.doctorId === doctorFilter : true)).sort((a, b) => b.date.localeCompare(a.date))
-  const pRx = allRx.filter(r => r.patientId === patient.id && (doctorFilter ? r.doctorId === doctorFilter : true)).sort((a, b) => b.date.localeCompare(a.date))
-  const pMsgs = allMsgs.filter(m => ((m.fromRole === 'patient' && m.fromId === patient.id) || (m.toRole === 'patient' && m.toId === patient.id)) && (doctorFilter ? ((m.fromRole === 'doctor' && m.fromId === doctorFilter) || (m.toRole === 'doctor' && m.toId === doctorFilter)) : true)).sort((a, b) => b.id - a.id)
-  const pRecords = allMedRecords.filter(r => r.patientId === patient.id && (doctorFilter ? r.doctorId === doctorFilter : true)).sort((a, b) => b.id - a.id)
+  const pid = Number(patient.id)
+  const pAppts = allAppts.filter(a => Number(a.patientId) === pid && (doctorFilter ? Number(a.doctorId) === Number(doctorFilter) : true)).sort((a, b) => b.date.localeCompare(a.date))
+  const pRx = allRx.filter(r => Number(r.patientId) === pid && (doctorFilter ? Number(r.doctorId) === Number(doctorFilter) : true)).sort((a, b) => b.date.localeCompare(a.date))
+  const pMsgs = allMsgs.filter(m => ((m.fromRole === 'patient' && Number(m.fromId) === pid) || (m.toRole === 'patient' && Number(m.toId) === pid)) && (doctorFilter ? ((m.fromRole === 'doctor' && Number(m.fromId) === Number(doctorFilter)) || (m.toRole === 'doctor' && Number(m.toId) === Number(doctorFilter))) : true)).sort((a, b) => b.id - a.id)
+  const pRecords = allMedRecords.filter(r => Number(r.patientId) === Number(patient.id) && (doctorFilter ? Number(r.doctorId) === Number(doctorFilter) : true)).sort((a, b) => b.id - a.id)
 
   const docIds = [...new Set(allAppts.filter(a => a.patientId === patient.id).map(a => a.doctorId))]
   const visitedDocs = docIds.map(id => allDocs.find(d => d.id === id)).filter(Boolean)
