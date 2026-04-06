@@ -70,27 +70,22 @@ export default function AuthScreen({ showToast }) {
     showToast('Cont creat cu succes!')
   }
 
-  const logoWrap = (h, extra = {}) => (
-    <div style={{ background: 'rgba(255,255,255,.97)', borderRadius: 24, padding: '14px 28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 40px rgba(0,0,0,.25)', ...extra }}>
-      <img src="/logo.webp" alt="MedFlow" style={{ height: h }} />
-    </div>
-  )
   const splash = (
-    <div style={{ position: 'fixed', inset: 0, background: `linear-gradient(135deg,${T.navy} 0%,${T.blueDark} 40%,${T.blue} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, opacity: phase >= 1 ? 0 : 1, pointerEvents: phase >= 2 ? 'none' : 'all', transition: 'opacity .55s ease' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'linear-gradient(160deg,#EEF6FF 0%,#F8FBFF 50%,#E8F4FD 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, opacity: phase >= 1 ? 0 : 1, pointerEvents: phase >= 2 ? 'none' : 'all', transition: 'opacity .55s ease' }}>
       <div style={{ transform: phase >= 1 ? 'scale(.5)' : 'scale(1)', transition: 'transform .55s cubic-bezier(.34,1.2,.64,1)', animation: phase === 0 ? 'splashIn .7s cubic-bezier(.34,1.56,.64,1) both' : 'none' }}>
-        {logoWrap(130)}
+        <img src="/logo.webp" alt="MedFlow" style={{ height: 130 }} />
       </div>
     </div>
   )
-  const bgS = { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg,${T.navy} 0%,${T.blueDark} 40%,${T.blue} 100%)`, padding: 20, position: 'relative' }
+  const bgS = { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(160deg,#EEF6FF 0%,#F8FBFF 50%,#E8F4FD 100%)', padding: 20, position: 'relative' }
   const admBtn = (
-    <button onClick={() => { setMode('admin'); setErr('') }} style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.15)', borderRadius: T.r8, color: 'rgba(255,255,255,.5)', padding: '6px 14px', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
-      <Ic n="shld" s={12} c="rgba(255,255,255,.5)" /> Admin
+    <button onClick={() => { setMode('admin'); setErr('') }} style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(0,60,120,.07)', border: `1px solid ${T.border}`, borderRadius: T.r8, color: T.inkMid, padding: '6px 14px', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+      <Ic n="shld" s={12} c={T.inkMid} /> Admin
     </button>
   )
   const back = (fn) => (
-    <button onClick={fn} style={{ background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)', borderRadius: T.r8, color: '#fff', padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-      <Ic n="left" s={14} c="#fff" /> Înapoi
+    <button onClick={fn} style={{ background: 'rgba(0,60,120,.07)', border: `1px solid ${T.border}`, borderRadius: T.r8, color: T.inkMid, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <Ic n="left" s={14} c={T.inkMid} /> Înapoi
     </button>
   )
 
@@ -98,8 +93,8 @@ export default function AuthScreen({ showToast }) {
   if (mode === 'login' && !role) return (
     <div style={bgS}>{splash}{admBtn}
       <div style={{ maxWidth: 520, width: '100%', textAlign: 'center', opacity: phase >= 1 ? 1 : 0, transition: 'opacity .5s .15s ease' }}>
-        <div style={{ marginBottom: 20 }}>{logoWrap(mob ? 52 : 68)}</div>
-        <p style={{ color: 'rgba(255,255,255,.6)', fontSize: 15, marginBottom: 32 }}>Clinică Pediatrică — Cabinet Digital</p>
+        <img src="/logo.webp" alt="MedFlow" style={{ height: mob ? 52 : 68, marginBottom: 20 }} />
+        <p style={{ color: T.inkMid, fontSize: 15, marginBottom: 32 }}>Clinică Pediatrică — Cabinet Digital</p>
         <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: 16 }}>
           <div className="lcard card" onClick={() => setRole('doctor')} style={{ padding: mob ? 24 : 32 }}>
             <div style={{ width: 56, height: 56, borderRadius: T.r16, background: `linear-gradient(135deg,${T.cyan},${T.blue})`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}><Ic n="steth" s={26} c="#fff" /></div>
@@ -123,7 +118,7 @@ export default function AuthScreen({ showToast }) {
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           {back(() => { setMode('login'); setRole(null); setErr('') })}
           <div style={{ width: 48, height: 48, borderRadius: T.r12, background: 'linear-gradient(135deg,#EA580C,#9A3412)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}><Ic n="shld" s={22} c="#fff" /></div>
-          <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 800 }}>Administrator</h2>
+          <h2 style={{ color: T.navy, fontSize: 22, fontWeight: 800 }}>Administrator</h2>
         </div>
         <div className="card" style={{ padding: mob ? 20 : 28 }}>
           <FF label="Email" required><input className="inp" type="email" value={email} onChange={e => { setEmail(e.target.value); setErr('') }} /></FF>
@@ -145,7 +140,7 @@ export default function AuthScreen({ showToast }) {
       <div className="fade-up" style={{ maxWidth: 480, width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
           {back(() => { setMode('login'); setErr('') })}
-          <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 800 }}>Cont nou</h2>
+          <h2 style={{ color: T.navy, fontSize: 22, fontWeight: 800 }}>Cont nou</h2>
         </div>
         <div className="card" style={{ padding: mob ? 20 : 28 }}>
           <FF label="Tip cont">
@@ -192,7 +187,7 @@ export default function AuthScreen({ showToast }) {
       <div className="fade-up" style={{ maxWidth: 420, width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           {back(() => { setRole(null); setErr('') })}
-          <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 800 }}>Autentificare {role === 'doctor' ? 'Medic' : 'Pacient'}</h2>
+          <h2 style={{ color: T.navy, fontSize: 22, fontWeight: 800 }}>Autentificare {role === 'doctor' ? 'Medic' : 'Pacient'}</h2>
         </div>
         <div className="card" style={{ padding: mob ? 20 : 28 }}>
           <FF label="Email" required><input className="inp" type="email" value={email} onChange={e => { setEmail(e.target.value); setErr('') }} /></FF>
