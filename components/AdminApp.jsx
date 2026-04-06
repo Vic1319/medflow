@@ -1,10 +1,11 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { T, age, fmtS, mapDoctor, mapPatient, mapAppt, mapMsg, mapRx, mapService, mapDelReq, PSTATUS, ASTATUS } from '@/lib/theme'
+import { T, age, fmtS, mapDoctor, mapPatient, mapAppt, mapMsg, mapRx, mapService, mapDelReq, mapMedRecord, PSTATUS, ASTATUS } from '@/lib/theme'
 import { Ic, Tag, Av, Empty, FF, FG, StatBox, Header, BNav, QRModal, useIsMobile } from '@/components/ui'
 import HistoryReport from '@/components/HistoryReport'
 import ScheduleEditor from '@/components/ScheduleEditor'
+import MedicalRecordForm from '@/components/MedicalRecordForm'
 
 export default function AdminApp({ profile, onLogout, showToast }) {
   const mob = useIsMobile()
@@ -23,10 +24,12 @@ export default function AdminApp({ profile, onLogout, showToast }) {
   const [editSvcForm, setEditSvcForm] = useState({ name: '', desc: '', price: '', duration: '', docIds: [] })
   const [showSvcQR, setShowSvcQR] = useState(false)
   const [editScheduleDoc, setEditScheduleDoc] = useState(null)
+  const [medRecords, setMedRecords] = useState([])
+  const [openRecord, setOpenRecord] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const fetchAll = useCallback(async () => {
-    const [docsRes, patsRes, apptsRes, msgsRes, rxsRes, svcsRes, reqsRes] = await Promise.all([
+    const [docsRes, patsRes, apptsRes, msgsRes, rxsRes, svcsRes, reqsRes, recRes] = await Promise.all([
       supabase.from('doctors').select('*'),
       supabase.from('patients').select('*'),
       supabase.from('appointments').select('*'),
@@ -34,6 +37,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
       supabase.from('prescriptions').select('*'),
       supabase.from('services').select('*'),
       supabase.from('delete_requests').select('*'),
+      supabase.from('medical_records').select('*'),
     ])
     setDocs((docsRes.data || []).map(mapDoctor))
     setPats((patsRes.data || []).map(mapPatient))
@@ -42,6 +46,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
     setRxs((rxsRes.data || []).map(mapRx))
     setSvcs((svcsRes.data || []).map(mapService))
     setDelReqs((reqsRes.data || []).map(mapDelReq))
+    setMedRecords((recRes.data || []).map(mapMedRecord))
     setLoading(false)
   }, [])
 
@@ -54,7 +59,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
     { id: 'dashboard', l: 'Panou', ic: 'home', badge: 0 },
     { id: 'patients', l: 'Pacienți', ic: 'users', badge: 0 },
     { id: 'doctors', l: 'Medici', ic: 'steth', badge: 0 },
-    { id: 'appointments', l: 'Programări', ic: 'cal', badge: 0 },
+    { id: 'records', l: 'Fișe', ic: 'clip', badge: 0 },
     { id: 'services', l: 'Servicii', ic: 'svc', badge: 0 },
     { id: 'requests', l: 'Cereri', ic: 'bell', badge: pendingReqs },
   ]
@@ -353,6 +358,38 @@ export default function AdminApp({ profile, onLogout, showToast }) {
     )
   }
 
+  const AllRecords = () => {
+    const [flt, setFlt] = useState('all')
+    const filtered = flt === 'all' ? medRecords : medRecords.filter(r => r.status === flt)
+    return (
+      <div className="fade-up">
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+          {[['all', 'Toate'], ['draft', 'Draft'], ['completed', 'Finalizate']].map(([v, l]) => (
+            <button key={v} className={`chip ${flt === v ? 'on' : ''}`} onClick={() => setFlt(v)}>{l}</button>
+          ))}
+        </div>
+        {filtered.length === 0 ? <div className="card"><Empty icon="clip" title="Nicio fișă" desc="" /></div> : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {filtered.map(r => (
+              <div key={r.id} className="card" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
+                <Av name={r.patientName} size={40} variant="blue" />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 15 }}>{r.patientName}</div>
+                  <div style={{ fontSize: 12, color: T.inkMid, marginTop: 2 }}>Medic: {r.doctorName}</div>
+                  <div style={{ fontSize: 12, color: T.inkLight }}>{r.createdAt ? new Date(r.createdAt).toLocaleDateString('ro-RO') : '—'}</div>
+                </div>
+                <Tag v={r.status === 'completed' ? 'green' : 'yellow'} dot>{r.status === 'completed' ? 'Finalizată' : 'Draft'}</Tag>
+                <button className="btn-g" style={{ padding: '8px 12px' }} onClick={() => setOpenRecord({ record: r, appt: appts.find(a => a.id === r.appointmentId) || { id: r.appointmentId, patient: r.patientName, doctor: r.doctorName, patientId: r.patientId, doctorId: r.doctorId } })}>
+                  <Ic n="eye" s={14} /> Vezi
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   const Reqs = () => {
     const approveReq = async (r) => {
       await supabase.from('patients').delete().eq('id', r.patientId)
@@ -396,9 +433,10 @@ export default function AdminApp({ profile, onLogout, showToast }) {
   const titles = {
     dashboard: 'Panou Administrare', patients: `Pacienți (${pats.length})`,
     doctors: `Medici (${docs.length})`, appointments: `Programări (${appts.length})`,
+    records: `Fișe medicale (${medRecords.length})`,
     services: `Servicii (${svcs.length})`, requests: 'Cereri ștergere',
   }
-  const content = { dashboard: <Dash />, patients: <AllPat />, doctors: <AllDoc />, appointments: <AllAppt />, services: <SvcsAdm />, requests: <Reqs /> }
+  const content = { dashboard: <Dash />, patients: <AllPat />, doctors: <AllDoc />, appointments: <AllAppt />, records: <AllRecords />, services: <SvcsAdm />, requests: <Reqs /> }
 
   return (
     <div style={{ minHeight: '100vh', background: T.bg }}>
@@ -410,6 +448,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
       <BNav items={nav} active={page} set={setPage} />
       {showSvcQR && <QRModal onClose={() => setShowSvcQR(false)} title="Programare — Servicii" linkText="services" />}
       {editScheduleDoc && <ScheduleEditor doc={editScheduleDoc} onClose={() => setEditScheduleDoc(null)} onSaved={() => { fetchAll(); showToast('Program salvat!') }} />}
+      {openRecord && <MedicalRecordForm record={openRecord.record} appt={openRecord.appt} onClose={() => setOpenRecord(null)} onSaved={fetchAll} />}
     </div>
   )
 }
