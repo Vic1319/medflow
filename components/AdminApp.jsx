@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { T, age, fmtS, mapDoctor, mapPatient, mapAppt, mapMsg, mapRx, mapService, mapDelReq, mapMedRecord, PSTATUS, ASTATUS } from '@/lib/theme'
+import { T, age, fmt, fmtS, mapDoctor, mapPatient, mapAppt, mapMsg, mapRx, mapService, mapDelReq, mapMedRecord, mapAnalysis, PSTATUS, ASTATUS } from '@/lib/theme'
 import { Ic, Tag, Av, Empty, FF, FG, StatBox, Header, BNav, QRModal, useIsMobile } from '@/components/ui'
 import HistoryReport from '@/components/HistoryReport'
 import ScheduleEditor from '@/components/ScheduleEditor'
@@ -26,11 +26,12 @@ export default function AdminApp({ profile, onLogout, showToast }) {
   const [editScheduleDoc, setEditScheduleDoc] = useState(null)
   const [assignDocPat, setAssignDocPat] = useState(null)
   const [medRecords, setMedRecords] = useState([])
+  const [analyses, setAnalyses] = useState([])
   const [openRecord, setOpenRecord] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const fetchAll = useCallback(async () => {
-    const [docsRes, patsRes, apptsRes, msgsRes, rxsRes, svcsRes, reqsRes, recRes] = await Promise.all([
+    const [docsRes, patsRes, apptsRes, msgsRes, rxsRes, svcsRes, reqsRes, recRes, analRes] = await Promise.all([
       supabase.from('doctors').select('*'),
       supabase.from('patients').select('*'),
       supabase.from('appointments').select('*'),
@@ -39,6 +40,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
       supabase.from('services').select('*'),
       supabase.from('delete_requests').select('*'),
       supabase.from('medical_records').select('*'),
+      supabase.from('analyses').select('*'),
     ])
     setDocs((docsRes.data || []).map(mapDoctor))
     setPats((patsRes.data || []).map(mapPatient))
@@ -48,6 +50,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
     setSvcs((svcsRes.data || []).map(mapService))
     setDelReqs((reqsRes.data || []).map(mapDelReq))
     setMedRecords((recRes.data || []).map(mapMedRecord))
+    setAnalyses((analRes.data || []).map(mapAnalysis))
     setLoading(false)
   }, [])
 
@@ -61,7 +64,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
     { id: 'patients', l: 'Pacienți', ic: 'users', badge: 0 },
     { id: 'doctors', l: 'Medici', ic: 'steth', badge: 0 },
     { id: 'records', l: 'Fișe', ic: 'clip', badge: 0 },
-    { id: 'services', l: 'Servicii', ic: 'svc', badge: 0 },
+    { id: 'analyses', l: 'Analize', ic: 'bar', badge: 0 },
     { id: 'requests', l: 'Cereri', ic: 'bell', badge: pendingReqs },
   ]
 
@@ -99,7 +102,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
         {[{ label: 'Pacienți', value: pats.length, icon: 'users', color: T.blue, bg: '#EFF6FF', p: 'patients' },
           { label: 'Medici', value: docs.length, icon: 'steth', color: T.purple, bg: T.purpleBg, p: 'doctors' },
           { label: 'Programări', value: appts.length, icon: 'cal', color: T.cyan, bg: T.cyanDim, p: 'appointments' },
-          { label: 'Servicii', value: svcs.length, icon: 'svc', color: T.success, bg: T.successBg, p: 'services' }].map((s, i) => (
+          { label: 'Analize', value: analyses.length, icon: 'bar', color: T.warning, bg: T.warningBg, p: 'analyses' }].map((s, i) => (
           <StatBox key={i} {...s} onClick={() => setPage(s.p)} />
         ))}
       </div>
@@ -460,13 +463,44 @@ export default function AdminApp({ profile, onLogout, showToast }) {
     )
   }
 
+  const ASTATS_C = { 'Normal': 'green', 'Anormal': 'red', 'În așteptare': 'yellow' }
+  const AllAnalyses = () => {
+    const [flt, setFlt] = useState('all')
+    const list = flt === 'all' ? analyses : analyses.filter(a => a.status === flt)
+    return (
+      <div className="fade-up">
+        <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+          {['all', 'Normal', 'Anormal', 'În așteptare'].map(v => (
+            <button key={v} className={`chip ${flt === v ? 'on' : ''}`} onClick={() => setFlt(v)}>{v === 'all' ? 'Toate' : v}</button>
+          ))}
+        </div>
+        {list.length === 0 ? <div className="card"><Empty icon="bar" title="Nicio analiză" desc="" /></div> : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[...list].sort((a,b) => b.date?.localeCompare(a.date)).map(a => (
+              <div key={a.id} className="card" style={{ padding: 16, borderLeft: `4px solid ${a.status === 'Normal' ? T.success : a.status === 'Anormal' ? T.danger : T.warning}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 15 }}>{a.type}</div>
+                    <div style={{ fontSize: 12, color: T.inkMid, marginTop: 2 }}>{a.patientName} · {a.doctorName} · {fmt(a.date)}</div>
+                  </div>
+                  <Tag v={ASTATS_C[a.status] || 'default'} dot>{a.status}</Tag>
+                </div>
+                {a.results && <div style={{ fontSize: 13, color: T.ink, background: T.surfaceAlt, borderRadius: T.r8, padding: '8px 12px', border: `1px solid ${T.border}` }}>{a.results}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   const titles = {
     dashboard: 'Panou Administrare', patients: `Pacienți (${pats.length})`,
     doctors: `Medici (${docs.length})`, appointments: `Programări (${appts.length})`,
-    records: `Fișe medicale (${medRecords.length})`,
+    records: `Fișe medicale (${medRecords.length})`, analyses: `Analize (${analyses.length})`,
     services: `Servicii (${svcs.length})`, requests: 'Cereri ștergere',
   }
-  const content = { dashboard: <Dash />, patients: <AllPat />, doctors: <AllDoc />, appointments: <AllAppt />, records: <AllRecords />, services: <SvcsAdm />, requests: <Reqs /> }
+  const content = { dashboard: <Dash />, patients: <AllPat />, doctors: <AllDoc />, appointments: <AllAppt />, records: <AllRecords />, analyses: <AllAnalyses />, services: <SvcsAdm />, requests: <Reqs /> }
 
   return (
     <div style={{ minHeight: '100vh', background: T.bg }}>

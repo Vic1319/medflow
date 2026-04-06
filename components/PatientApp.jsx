@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { T, age, fmt, fmtS, mapDoctor, mapPatient, mapAppt, mapMsg, mapRx, mapService, generateSlots, ASTATUS } from '@/lib/theme'
+import { T, age, fmt, fmtS, mapDoctor, mapPatient, mapAppt, mapMsg, mapRx, mapService, mapAnalysis, generateSlots, ASTATUS } from '@/lib/theme'
 import { Ic, Tag, Av, Empty, FF, FG, Header, BNav, useIsMobile } from '@/components/ui'
 import HistoryReport from '@/components/HistoryReport'
 
@@ -13,6 +13,7 @@ export default function PatientApp({ profile, onLogout, showToast }) {
   const [msgs, setMsgs] = useState([])
   const [docs, setDocs] = useState([])
   const [svcs, setSvcs] = useState([])
+  const [analyses, setAnalyses] = useState([])
   const [page, setPage] = useState('dashboard')
   const [showBook, setShowBook] = useState(false)
   const [viewDocId, setViewDocId] = useState(null)
@@ -21,13 +22,14 @@ export default function PatientApp({ profile, onLogout, showToast }) {
 
   const fetchAll = useCallback(async () => {
     const pid = profile.patient_id
-    const [patRes, apptsRes, rxsRes, msgsRes, docsRes, svcsRes] = await Promise.all([
+    const [patRes, apptsRes, rxsRes, msgsRes, docsRes, svcsRes, analRes] = await Promise.all([
       supabase.from('patients').select('*').eq('id', pid).single(),
       supabase.from('appointments').select('*').eq('patient_id', pid),
       supabase.from('prescriptions').select('*').eq('patient_id', pid),
       supabase.from('messages').select('*').or(`and(from_role.eq.patient,from_id.eq.${pid}),and(to_role.eq.patient,to_id.eq.${pid})`),
       supabase.from('doctors').select('*').eq('is_active', true),
       supabase.from('services').select('*').eq('is_active', true),
+      supabase.from('analyses').select('*').eq('patient_id', pid),
     ])
     if (patRes.data) setPat(mapPatient(patRes.data))
     setAppts((apptsRes.data || []).map(mapAppt))
@@ -35,6 +37,7 @@ export default function PatientApp({ profile, onLogout, showToast }) {
     setMsgs((msgsRes.data || []).map(mapMsg))
     setDocs((docsRes.data || []).map(mapDoctor))
     setSvcs((svcsRes.data || []).map(mapService))
+    setAnalyses((analRes.data || []).map(mapAnalysis))
     setLoading(false)
   }, [profile.patient_id])
 
@@ -173,6 +176,7 @@ export default function PatientApp({ profile, onLogout, showToast }) {
     { id: 'appointments', l: 'Programări', ic: 'cal', badge: 0 },
     { id: 'services', l: 'Servicii', ic: 'svc', badge: 0 },
     { id: 'doctors', l: 'Medici', ic: 'steth', badge: 0 },
+    { id: 'analyses', l: 'Analize', ic: 'bar', badge: 0 },
     { id: 'messages', l: 'Mesaje', ic: 'msg', badge: unread },
   ]
 
@@ -489,8 +493,33 @@ export default function PatientApp({ profile, onLogout, showToast }) {
     )
   }
 
-  const titles = { dashboard: 'Cabinetul Meu', appointments: 'Programări', services: 'Servicii', doctors: 'Medicii Mei', messages: 'Mesaje' }
-  const content = { dashboard: <Dash />, appointments: <Appts />, services: <Svcs />, doctors: <Doctors />, messages: <Messages /> }
+  const ASTATS = { 'Normal': 'green', 'Anormal': 'red', 'În așteptare': 'yellow' }
+  const AnalysesView = () => (
+    <div className="fade-up">
+      {analyses.length === 0 ? (
+        <div className="card"><Empty icon="bar" title="Nicio analiză" desc="Medicul tău va adăuga analizele aici" /></div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {[...analyses].sort((a,b) => b.date?.localeCompare(a.date)).map(a => (
+            <div key={a.id} className="card" style={{ padding: 16, borderLeft: `4px solid ${a.status === 'Normal' ? T.success : a.status === 'Anormal' ? T.danger : T.warning}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 15 }}>{a.type}</div>
+                  <div style={{ fontSize: 12, color: T.inkMid, marginTop: 2 }}>{a.doctorName} · {fmt(a.date)}</div>
+                </div>
+                <Tag v={ASTATS[a.status] || 'default'} dot>{a.status}</Tag>
+              </div>
+              {a.results && <div style={{ fontSize: 13, color: T.ink, background: T.surfaceAlt, borderRadius: T.r8, padding: '8px 12px', border: `1px solid ${T.border}`, lineHeight: 1.6 }}>{a.results}</div>}
+              {a.notes && <div style={{ fontSize: 12, color: T.inkLight, marginTop: 6 }}>Obs: {a.notes}</div>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+
+  const titles = { dashboard: 'Cabinetul Meu', appointments: 'Programări', services: 'Servicii', doctors: 'Medicii Mei', analyses: 'Analizele Mele', messages: 'Mesaje' }
+  const content = { dashboard: <Dash />, appointments: <Appts />, services: <Svcs />, doctors: <Doctors />, analyses: <AnalysesView />, messages: <Messages /> }
 
   return (
     <div style={{ minHeight: '100vh', background: T.bg }}>

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { T, age, fmt, fmtS, mapDoctor, mapPatient, mapAppt, mapMsg, mapRx, mapMedRecord, PSTATUS, ASTATUS, ATYPE } from '@/lib/theme'
+import { T, age, fmt, fmtS, mapDoctor, mapPatient, mapAppt, mapMsg, mapRx, mapMedRecord, mapAnalysis, PSTATUS, ASTATUS, ATYPE } from '@/lib/theme'
 import { Ic, Tag, Av, Empty, FF, FG, StatBox, Header, BNav, QRModal, useIsMobile } from '@/components/ui'
 import HistoryReport from '@/components/HistoryReport'
 import MedicalRecordForm from '@/components/MedicalRecordForm'
@@ -15,6 +15,7 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
   const [msgs, setMsgs] = useState([])
   const [rxs, setRxs] = useState([])
   const [medRecords, setMedRecords] = useState([])
+  const [analyses, setAnalyses] = useState([])
   const [page, setPage] = useState('dashboard')
   const [showQR, setShowQR] = useState(false)
   const [showSchedule, setShowSchedule] = useState(false)
@@ -24,12 +25,13 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
 
   const fetchAll = useCallback(async () => {
     const did = profile.doctor_id
-    const [docRes, apptsRes, msgsRes, rxsRes, recRes] = await Promise.all([
+    const [docRes, apptsRes, msgsRes, rxsRes, recRes, analRes] = await Promise.all([
       supabase.from('doctors').select('*').eq('id', did).single(),
       supabase.from('appointments').select('*').eq('doctor_id', did),
       supabase.from('messages').select('*').or(`and(from_role.eq.doctor,from_id.eq.${did}),and(to_role.eq.doctor,to_id.eq.${did})`),
       supabase.from('prescriptions').select('*').eq('doctor_id', did),
       supabase.from('medical_records').select('*').eq('doctor_id', did),
+      supabase.from('analyses').select('*').eq('doctor_id', did),
     ])
     const docData = docRes.data ? mapDoctor(docRes.data) : null
     setDoc(docData)
@@ -38,6 +40,7 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
     setMsgs((msgsRes.data || []).map(mapMsg))
     setRxs((rxsRes.data || []).map(mapRx))
     setMedRecords((recRes.data || []).map(mapMedRecord))
+    setAnalyses((analRes.data || []).map(mapAnalysis))
 
     const patIds = [...new Set(mappedAppts.map(a => a.patientId))].filter(Boolean)
     if (patIds.length > 0) {
@@ -72,6 +75,7 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
     { id: 'patients', l: 'Pacienți', ic: 'users', badge: 0 },
     { id: 'appointments', l: 'Programări', ic: 'cal', badge: 0 },
     { id: 'records', l: 'Fișe', ic: 'clip', badge: pendingRecords },
+    { id: 'analyses', l: 'Analize', ic: 'bar', badge: 0 },
     { id: 'messages', l: 'Mesaje', ic: 'msg', badge: unread },
   ]
 
@@ -305,8 +309,91 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
     )
   }
 
-  const titles = { dashboard: 'Cabinet Medical', patients: 'Pacienții Mei', appointments: 'Programări', records: 'Fișe de control', messages: 'Mesaje' }
-  const content = { dashboard: <Dash />, patients: <Pat />, appointments: <Appts />, records: <Records />, messages: <MsgsD /> }
+  const ATYPES = ['Hemogramă', 'Biochimie sanguină', 'Sumar urină', 'Ecografie', 'Radiografie', 'ECG', 'Glicemie', 'Colesterol', 'Alte']
+  const ASTATS = { 'Normal': 'green', 'Anormal': 'red', 'În așteptare': 'yellow' }
+
+  const Analyses = () => {
+    const [showAdd, setShowAdd] = useState(false)
+    const [form, setForm] = useState({ patientId: pats[0]?.id || '', type: ATYPES[0], date: new Date().toISOString().slice(0,10), status: 'În așteptare', results: '', notes: '' })
+    const [flt, setFlt] = useState('all')
+
+    const add = async () => {
+      const p = pats.find(x => Number(x.id) === Number(form.patientId))
+      if (!p) return
+      await supabase.from('analyses').insert({ patient_id: p.id, patient_name: p.name, doctor_id: doc.id, doctor_name: doc.name, date: form.date, type: form.type, status: form.status, results: form.results, notes: form.notes })
+      showToast('Analiză adăugată!'); await fetchAll(); setShowAdd(false)
+      setForm({ patientId: pats[0]?.id || '', type: ATYPES[0], date: new Date().toISOString().slice(0,10), status: 'În așteptare', results: '', notes: '' })
+    }
+
+    const list = flt === 'all' ? analyses : analyses.filter(a => a.status === flt)
+
+    return (
+      <div className="fade-up">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {['all', 'Normal', 'Anormal', 'În așteptare'].map(v => (
+              <button key={v} className={`chip ${flt === v ? 'on' : ''}`} onClick={() => setFlt(v)}>{v === 'all' ? 'Toate' : v}</button>
+            ))}
+          </div>
+          <button className="btn-p" onClick={() => setShowAdd(true)}><Ic n="plus" s={14} c="#fff" /> Adaugă</button>
+        </div>
+        {list.length === 0 ? <div className="card"><Empty icon="file" title="Nicio analiză" desc="" /></div> : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[...list].sort((a,b) => b.date?.localeCompare(a.date)).map(a => (
+              <div key={a.id} className="card" style={{ padding: 16, borderLeft: `4px solid ${a.status === 'Normal' ? T.success : a.status === 'Anormal' ? T.danger : T.warning}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 15 }}>{a.type}</div>
+                    <div style={{ fontSize: 12, color: T.inkMid, marginTop: 2 }}>{a.patientName} · {fmt(a.date)}</div>
+                  </div>
+                  <Tag v={ASTATS[a.status] || 'default'} dot>{a.status}</Tag>
+                </div>
+                {a.results && <div style={{ fontSize: 13, color: T.ink, background: T.surfaceAlt, borderRadius: T.r8, padding: '8px 12px', border: `1px solid ${T.border}` }}>{a.results}</div>}
+                {a.notes && <div style={{ fontSize: 12, color: T.inkLight, marginTop: 6 }}>Notă: {a.notes}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+        {showAdd && (
+          <div className="ovl" onClick={e => e.target === e.currentTarget && setShowAdd(false)}>
+            <div className="modal" style={{ padding: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                <span style={{ fontWeight: 700, fontSize: 17 }}>Analiză nouă</span>
+                <button className="btn-g" style={{ padding: 6 }} onClick={() => setShowAdd(false)}><Ic n="x" s={15} /></button>
+              </div>
+              <FG mob={mob}>
+                <FF label="Pacient" required>
+                  <select className="sel" value={form.patientId} onChange={e => setForm(f => ({ ...f, patientId: e.target.value }))}>
+                    {pats.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                </FF>
+                <FF label="Tip analiză" required>
+                  <select className="sel" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
+                    {ATYPES.map(t => <option key={t}>{t}</option>)}
+                  </select>
+                </FF>
+                <FF label="Data"><input className="inp" type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} /></FF>
+                <FF label="Status">
+                  <select className="sel" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
+                    {['În așteptare', 'Normal', 'Anormal'].map(s => <option key={s}>{s}</option>)}
+                  </select>
+                </FF>
+                <div style={{ gridColumn: '1/-1' }}><FF label="Rezultate"><textarea className="inp" rows={3} placeholder="ex: Hemoglobina 13.5 g/dL, Leucocite 7200..." value={form.results} onChange={e => setForm(f => ({ ...f, results: e.target.value }))} /></FF></div>
+                <div style={{ gridColumn: '1/-1' }}><FF label="Observații"><textarea className="inp" rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></FF></div>
+              </FG>
+              <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+                <button className="btn-g" onClick={() => setShowAdd(false)}>Anulează</button>
+                <button className="btn-p" style={{ flex: 1 }} onClick={add} disabled={!form.patientId}>Salvează</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const titles = { dashboard: 'Cabinet Medical', patients: 'Pacienții Mei', appointments: 'Programări', records: 'Fișe de control', analyses: 'Analize', messages: 'Mesaje' }
+  const content = { dashboard: <Dash />, patients: <Pat />, appointments: <Appts />, records: <Records />, analyses: <Analyses />, messages: <MsgsD /> }
 
   return (
     <div style={{ minHeight: '100vh', background: T.bg }}>
