@@ -96,7 +96,7 @@ export default function Home() {
         <GS />
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg,${T.navy} 0%,${T.blueDark} 40%,${T.blue} 100%)` }}>
           <img src="/logo.webp" alt="MedFlow" style={{ height: 90, animation: 'splashIn .8s cubic-bezier(.34,1.56,.64,1) both' }} />
-          <p style={{ color: 'rgba(255,255,255,.65)', fontSize: 15, marginTop: 14, animation: 'splashSub .6s .35s both' }}>Clinică Pediatrică — Cabinet Digital</p>
+          <p style={{ color: 'rgba(255,255,255,.65)', fontSize: 15, marginTop: 14, animation: 'splashSub .6s .35s both' }}>Cabinet Medical — Platformă Digitală</p>
           <div style={{ display: 'flex', gap: 7, marginTop: 36, animation: 'splashSub .6s .6s both' }}>
             {[0, .18, .36].map((d, i) => (
               <span key={i} style={{ width: 9, height: 9, borderRadius: '50%', background: 'rgba(255,255,255,.7)', display: 'inline-block', animation: `dot 1.3s ${d}s infinite ease-in-out` }} />

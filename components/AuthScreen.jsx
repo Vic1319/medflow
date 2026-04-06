@@ -49,7 +49,7 @@ export default function AuthScreen({ showToast }) {
   const tryReg = async () => {
     setErr('')
     if (!rName || !rEmail || !rPw) { setErr('Completează câmpurile obligatorii!'); return }
-    if (rRole === 'patient' && (!rChild || !rDob)) { setErr('Completează datele copilului!'); return }
+    if (rRole === 'patient' && (!rChild || !rDob)) { setErr('Completează datele pacientului!'); return }
     if (rRole === 'doctor' && !rSpec) { setErr('Completează specializarea!'); return }
     setLoading(true)
 
@@ -94,7 +94,7 @@ export default function AuthScreen({ showToast }) {
     <div style={bgS}>{splash}{admBtn}
       <div style={{ maxWidth: 520, width: '100%', textAlign: 'center', opacity: phase >= 1 ? 1 : 0, transition: 'opacity .5s .15s ease' }}>
         <img src="/logo.webp" alt="MedFlow" style={{ height: mob ? 52 : 68, marginBottom: 20 }} />
-        <p style={{ color: T.inkMid, fontSize: 15, marginBottom: 32 }}>Clinică Pediatrică — Cabinet Digital</p>
+        <p style={{ color: T.inkMid, fontSize: 15, marginBottom: 32 }}>Cabinet Medical — Platformă Digitală</p>
         <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: 16 }}>
           <div className="lcard card" onClick={() => setRole('doctor')} style={{ padding: mob ? 24 : 32 }}>
             <div style={{ width: 56, height: 56, borderRadius: T.r16, background: `linear-gradient(135deg,${T.cyan},${T.blue})`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}><Ic n="steth" s={26} c="#fff" /></div>
@@ -152,15 +152,15 @@ export default function AuthScreen({ showToast }) {
           </FF>
           <div style={{ height: 10 }} />
           <FG mob={mob}>
-            <FF label={rRole === 'doctor' ? 'Nume complet' : 'Numele tău (părinte)'} required><input className="inp" value={rName} onChange={e => setRName(e.target.value)} /></FF>
+            <FF label="Nume complet" required><input className="inp" value={rName} onChange={e => setRName(e.target.value)} /></FF>
             <FF label="Email" required><input className="inp" type="email" value={rEmail} onChange={e => setREmail(e.target.value)} /></FF>
             <FF label="Parolă" required><input className="inp" type="password" value={rPw} onChange={e => setRPw(e.target.value)} /></FF>
             <FF label="Telefon"><input className="inp" type="tel" value={rPhone} onChange={e => setRPhone(e.target.value)} /></FF>
             {rRole === 'doctor' && <FF label="Specializare" required><input className="inp" value={rSpec} onChange={e => setRSpec(e.target.value)} /></FF>}
             {rRole === 'patient' && <>
-              <FF label="Prenume copil" required><input className="inp" value={rChild} onChange={e => setRChild(e.target.value)} /></FF>
-              <FF label="Data nașterii" required><input className="inp" type="date" value={rDob} onChange={e => setRDob(e.target.value)} /></FF>
-              <FF label="Medic curant">
+              <FF label="Nume pacient" required><input className="inp" value={rChild} onChange={e => setRChild(e.target.value)} /></FF>
+              <FF label="Data nașterii"><input className="inp" type="date" value={rDob} onChange={e => setRDob(e.target.value)} /></FF>
+              <FF label="Medic">
                 <select className="sel" value={rDoc} onChange={e => setRDoc(e.target.value)}>
                   {doctors.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
                 </select>

@@ -180,7 +180,7 @@ export default function PatientApp({ profile, onLogout, showToast }) {
     if (!vDoc) return null
     return (
       <div style={{ minHeight: '100vh', background: T.bg }}>
-        <Header name={pat.parent || pat.name} variant="green" role="patient" onLogout={onLogout} mob={mob} />
+        <Header name={pat.name} variant="green" role="patient" onLogout={onLogout} mob={mob} />
         <main style={{ padding: mob ? '16px 16px 80px' : '24px 28px', maxWidth: 700, margin: '0 auto' }}>
           <HistoryReport title={`Istoric cu ${vDoc.name}`} patient={pat} doctorFilter={vDoc.id} allAppts={appts} allRx={rxs} allMsgs={msgs} allDocs={docs} mob={mob} onBack={() => setViewDocId(null)} />
         </main>
@@ -196,8 +196,8 @@ export default function PatientApp({ profile, onLogout, showToast }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <Av name={pat.name} size={mob ? 50 : 64} variant="green" />
           <div>
-            <div style={{ fontSize: mob ? 18 : 22, fontWeight: 800 }}>Bun venit, {pat.parent?.split(' ')[0] || pat.name}</div>
-            <div style={{ fontSize: 13, opacity: .8, marginTop: 3 }}>{pat.name} · {age(pat.dob)} ani</div>
+            <div style={{ fontSize: mob ? 18 : 22, fontWeight: 800 }}>Bun venit, {pat.name.split(' ')[0]}</div>
+            <div style={{ fontSize: 13, opacity: .8, marginTop: 3 }}>{pat.name}{pat.dob ? ` · ${age(pat.dob)} ani` : ''}</div>
           </div>
         </div>
       </div>
@@ -301,7 +301,7 @@ export default function PatientApp({ profile, onLogout, showToast }) {
     const send = async () => {
       if (!nm.trim() || !myDoc) return
       await supabase.from('messages').insert({
-        from_name: pat.parent || pat.name, from_role: 'patient', from_id: pat.id,
+        from_name: pat.name, from_role: 'patient', from_id: pat.id,
         to_name: myDoc.name, to_role: 'doctor', to_id: myDoc.id,
         text: nm, date: new Date().toISOString().slice(0, 10), is_read: false,
       })
@@ -334,7 +334,7 @@ export default function PatientApp({ profile, onLogout, showToast }) {
 
   return (
     <div style={{ minHeight: '100vh', background: T.bg }}>
-      <Header name={pat.parent || pat.name} variant="green" role="patient" onLogout={onLogout} mob={mob} />
+      <Header name={pat.name} variant="green" role="patient" onLogout={onLogout} mob={mob} />
       <main style={{ padding: mob ? '16px 16px 80px' : '24px 28px', maxWidth: 700, margin: '0 auto' }}>
         <h1 style={{ fontSize: mob ? 20 : 22, fontWeight: 800, marginBottom: 16 }}>{titles[page]}</h1>
         {content[page]}
