@@ -70,9 +70,16 @@ export default function AuthScreen({ showToast }) {
     showToast('Cont creat cu succes!')
   }
 
+  const logoWrap = (h, extra = {}) => (
+    <div style={{ background: 'rgba(255,255,255,.97)', borderRadius: 24, padding: '14px 28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 40px rgba(0,0,0,.25)', ...extra }}>
+      <img src="/logo.webp" alt="MedFlow" style={{ height: h }} />
+    </div>
+  )
   const splash = (
     <div style={{ position: 'fixed', inset: 0, background: `linear-gradient(135deg,${T.navy} 0%,${T.blueDark} 40%,${T.blue} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, opacity: phase >= 1 ? 0 : 1, pointerEvents: phase >= 2 ? 'none' : 'all', transition: 'opacity .55s ease' }}>
-      <img src="/logo.webp" alt="MedFlow" style={{ height: phase >= 1 ? 60 : 130, filter: 'drop-shadow(0 4px 24px rgba(0,0,0,.35))', transition: 'height .55s cubic-bezier(.34,1.2,.64,1)', animation: phase === 0 ? 'splashIn .7s cubic-bezier(.34,1.56,.64,1) both' : 'none' }} />
+      <div style={{ transform: phase >= 1 ? 'scale(.5)' : 'scale(1)', transition: 'transform .55s cubic-bezier(.34,1.2,.64,1)', animation: phase === 0 ? 'splashIn .7s cubic-bezier(.34,1.56,.64,1) both' : 'none' }}>
+        {logoWrap(130)}
+      </div>
     </div>
   )
   const bgS = { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg,${T.navy} 0%,${T.blueDark} 40%,${T.blue} 100%)`, padding: 20, position: 'relative' }
@@ -91,7 +98,7 @@ export default function AuthScreen({ showToast }) {
   if (mode === 'login' && !role) return (
     <div style={bgS}>{splash}{admBtn}
       <div style={{ maxWidth: 520, width: '100%', textAlign: 'center', opacity: phase >= 1 ? 1 : 0, transition: 'opacity .5s .15s ease' }}>
-        <img src="/logo.webp" alt="MedFlow" style={{ height: mob ? 60 : 80, marginBottom: 16, filter: 'drop-shadow(0 2px 12px rgba(0,0,0,.3))' }} />
+        <div style={{ marginBottom: 20 }}>{logoWrap(mob ? 52 : 68)}</div>
         <p style={{ color: 'rgba(255,255,255,.6)', fontSize: 15, marginBottom: 32 }}>Clinică Pediatrică — Cabinet Digital</p>
         <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: 16 }}>
           <div className="lcard card" onClick={() => setRole('doctor')} style={{ padding: mob ? 24 : 32 }}>
