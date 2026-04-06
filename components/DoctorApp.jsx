@@ -107,10 +107,10 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
         <button className="btn-p" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setPage('records')}><Ic n="clip" s={14} c="#fff" /> Fișe de completat ({pendingRecords})</button>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : 'repeat(4,1fr)', gap: mob ? 10 : 16 }}>
-        {[{ l: 'Pacienți', v: pats.length, ic: 'users', c: T.blue, bg: '#EFF6FF', p: 'patients' },
-          { l: 'Programări', v: appts.length, ic: 'cal', c: T.cyan, bg: T.cyanDim, p: 'appointments' },
-          { l: 'Fișe pending', v: pendingRecords, ic: 'clip', c: T.warning, bg: T.warningBg, p: 'records' },
-          { l: 'Mesaje noi', v: unread, ic: 'msg', c: T.purple, bg: T.purpleBg, p: 'messages' }].map((s, i) => (
+        {[{ label: 'Pacienți', value: pats.length, icon: 'users', color: T.blue, bg: '#EFF6FF', p: 'patients' },
+          { label: 'Programări', value: appts.length, icon: 'cal', color: T.cyan, bg: T.cyanDim, p: 'appointments' },
+          { label: 'Fișe pending', value: pendingRecords, icon: 'clip', color: T.warning, bg: T.warningBg, p: 'records' },
+          { label: 'Mesaje noi', value: unread, icon: 'msg', color: T.purple, bg: T.purpleBg, p: 'messages' }].map((s, i) => (
           <StatBox key={i} {...s} onClick={() => setPage(s.p)} />
         ))}
       </div>

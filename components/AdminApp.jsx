@@ -88,10 +88,10 @@ export default function AdminApp({ profile, onLogout, showToast }) {
         </div>
       )}
       <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : 'repeat(4,1fr)', gap: mob ? 10 : 16 }}>
-        {[{ l: 'Pacienți', v: pats.length, ic: 'users', c: T.blue, bg: '#EFF6FF', p: 'patients' },
-          { l: 'Medici', v: docs.length, ic: 'steth', c: T.purple, bg: T.purpleBg, p: 'doctors' },
-          { l: 'Programări', v: appts.length, ic: 'cal', c: T.cyan, bg: T.cyanDim, p: 'appointments' },
-          { l: 'Servicii', v: svcs.length, ic: 'svc', c: T.success, bg: T.successBg, p: 'services' }].map((s, i) => (
+        {[{ label: 'Pacienți', value: pats.length, icon: 'users', color: T.blue, bg: '#EFF6FF', p: 'patients' },
+          { label: 'Medici', value: docs.length, icon: 'steth', color: T.purple, bg: T.purpleBg, p: 'doctors' },
+          { label: 'Programări', value: appts.length, icon: 'cal', color: T.cyan, bg: T.cyanDim, p: 'appointments' },
+          { label: 'Servicii', value: svcs.length, icon: 'svc', color: T.success, bg: T.successBg, p: 'services' }].map((s, i) => (
           <StatBox key={i} {...s} onClick={() => setPage(s.p)} />
         ))}
       </div>
