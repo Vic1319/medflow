@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { mapDoctor, mapPatient } from '@/lib/theme'
+import { T } from '@/lib/theme'
 import { GS, Toast } from '@/components/ui'
 import AuthScreen from '@/components/AuthScreen'
 import PatientApp from '@/components/PatientApp'
@@ -93,13 +94,13 @@ export default function Home() {
     return (
       <>
         <GS />
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ textAlign: 'center' }}>
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 1s linear infinite' }}>
-              <circle cx="12" cy="12" r="10" stroke="#B8D4EE" strokeWidth="3"/>
-              <path d="M12 2a10 10 0 0 1 10 10" stroke="#0077B6" strokeWidth="3" strokeLinecap="round"/>
-            </svg>
-            <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg,${T.navy} 0%,${T.blueDark} 40%,${T.blue} 100%)` }}>
+          <img src="/logo.webp" alt="MedFlow" style={{ height: 90, animation: 'splashIn .8s cubic-bezier(.34,1.56,.64,1) both' }} />
+          <p style={{ color: 'rgba(255,255,255,.65)', fontSize: 15, marginTop: 14, animation: 'splashSub .6s .35s both' }}>Clinică Pediatrică — Cabinet Digital</p>
+          <div style={{ display: 'flex', gap: 7, marginTop: 36, animation: 'splashSub .6s .6s both' }}>
+            {[0, .18, .36].map((d, i) => (
+              <span key={i} style={{ width: 9, height: 9, borderRadius: '50%', background: 'rgba(255,255,255,.7)', display: 'inline-block', animation: `dot 1.3s ${d}s infinite ease-in-out` }} />
+            ))}
           </div>
         </div>
       </>

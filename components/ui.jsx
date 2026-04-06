@@ -18,6 +18,10 @@ export function GS() {
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:${T.bg};color:${T.ink};overflow-x:hidden}input,select,textarea,button{font-family:inherit;font-size:16px}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:${T.borderMid};border-radius:3px}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}.fade-up{animation:fadeUp .35s ease both}
+@keyframes splashIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
+@keyframes splashSub{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes dot{0%,80%,100%{transform:scale(0);opacity:.3}40%{transform:scale(1);opacity:1}}
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
 .btn-p{background:linear-gradient(135deg,${T.blue},${T.blueDark});color:#fff;border:none;border-radius:${T.r8};padding:10px 18px;font-size:14px;font-weight:700;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all .18s;box-shadow:0 2px 8px rgba(0,119,182,.3);white-space:nowrap}.btn-p:active{transform:scale(.97)}.btn-p:disabled{opacity:.5;cursor:not-allowed}
 .btn-g{background:${T.surface};color:${T.inkMid};border:1.5px solid ${T.border};border-radius:${T.r8};padding:9px 16px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;transition:all .15s}.btn-g:hover{border-color:${T.cyan};color:${T.blue}}
 .btn-d{background:${T.dangerBg};color:${T.danger};border:1.5px solid #FECACA;border-radius:${T.r8};padding:9px 14px;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:6px;cursor:pointer}

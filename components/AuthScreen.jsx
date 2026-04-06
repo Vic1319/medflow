@@ -79,10 +79,7 @@ export default function AuthScreen({ showToast }) {
   if (mode === 'login' && !role) return (
     <div style={bgS}>{admBtn}
       <div className="fade-up" style={{ maxWidth: 520, width: '100%', textAlign: 'center' }}>
-        <div style={{ width: 70, height: 70, borderRadius: T.r16, background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,.5)" strokeWidth="1.5"/><path d="M12 7v5l3 3" stroke="#fff" strokeWidth="2" strokeLinecap="round"/><circle cx="12" cy="12" r="2" fill="white"/></svg>
-        </div>
-        <h1 style={{ color: '#fff', fontSize: mob ? 28 : 36, fontWeight: 800, marginBottom: 6 }}>MedFlow</h1>
+        <img src="/logo.webp" alt="MedFlow" style={{ height: mob ? 60 : 80, marginBottom: 16, animation: 'splashIn .8s cubic-bezier(.34,1.56,.64,1) both', filter: 'brightness(0) invert(1)' }} />
         <p style={{ color: 'rgba(255,255,255,.6)', fontSize: 15, marginBottom: 32 }}>Clinică Pediatrică — Cabinet Digital</p>
         <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: 16 }}>
           <div className="lcard card" onClick={() => setRole('doctor')} style={{ padding: mob ? 24 : 32 }}>
