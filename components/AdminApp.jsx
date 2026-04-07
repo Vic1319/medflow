@@ -74,6 +74,13 @@ export default function AdminApp({ profile, onLogout, showToast }) {
     return (
       <div style={{ minHeight: '100vh', background: T.bg }}>
         <Header name="Admin Clinică" variant="orange" role="admin" onLogout={onLogout} mob={mob} />
+        <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: '8px 16px', display: 'flex', gap: 8, overflowX: 'auto', position: 'sticky', top: 57, zIndex: 30 }}>
+          {[{ id: 'appointments', l: 'Programări', ic: 'cal' }, { id: 'records', l: 'Fișe medicale', ic: 'clip' }].map(item => (
+            <button key={item.id} className="chip" style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }} onClick={() => { setViewPatId(null); setPage(item.id) }}>
+              <Ic n={item.ic} s={12} c={T.inkMid} /> {item.l}
+            </button>
+          ))}
+        </div>
         <main style={{ padding: mob ? '16px 16px 80px' : '24px 28px', maxWidth: 1000, margin: '0 auto' }}>
           <HistoryReport title={`Raport complet — ${vPat.name}`} patient={vPat} doctorFilter={null} allAppts={appts} allRx={rxs} allMsgs={msgs} allDocs={docs} allMedRecords={medRecords} mob={mob} onBack={() => setViewPatId(null)} onOpenRecord={(appt) => setOpenRecord({ record: medRecords.find(r => r.appointmentId === appt.id) || null, appt })} />
         </main>
@@ -364,24 +371,56 @@ export default function AdminApp({ profile, onLogout, showToast }) {
   }
 
   const AllRecords = () => {
-    const [flt, setFlt] = useState('all')
-    const filtered = flt === 'all' ? medRecords : medRecords.filter(r => r.status === flt)
+    const [qPat, setQPat] = useState('')
+    const [fDoc, setFDoc] = useState('all')
+    const [fStatus, setFStatus] = useState('all')
+    const [fDateFrom, setFDateFrom] = useState('')
+    const [fDateTo, setFDateTo] = useState('')
+    const docNames = [...new Set(medRecords.map(r => r.doctorName).filter(Boolean))]
+    const filtered = medRecords.filter(r => {
+      if (qPat && !r.patientName?.toLowerCase().includes(qPat.toLowerCase())) return false
+      if (fDoc !== 'all' && r.doctorName !== fDoc) return false
+      if (fStatus !== 'all' && r.status !== fStatus) return false
+      if (fDateFrom && r.created_at && r.created_at.slice(0,10) < fDateFrom) return false
+      if (fDateTo && r.created_at && r.created_at.slice(0,10) > fDateTo) return false
+      return true
+    }).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+
     return (
       <div className="fade-up">
-        <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-          {[['all', 'Toate'], ['draft', 'Draft'], ['completed', 'Finalizate']].map(([v, l]) => (
-            <button key={v} className={`chip ${flt === v ? 'on' : ''}`} onClick={() => setFlt(v)}>{l}</button>
-          ))}
+        <div className="card" style={{ padding: 14, marginBottom: 14 }}>
+          <div className="sb" style={{ marginBottom: 10 }}>
+            <Ic n="srch" s={14} c={T.inkFaint} />
+            <input placeholder="Caută pacient..." value={qPat} onChange={e => setQPat(e.target.value)} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : 'repeat(4,1fr)', gap: 8 }}>
+            <FF label="Medic">
+              <select className="sel" value={fDoc} onChange={e => setFDoc(e.target.value)}>
+                <option value="all">Toți medicii</option>
+                {docNames.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </FF>
+            <FF label="Status">
+              <select className="sel" value={fStatus} onChange={e => setFStatus(e.target.value)}>
+                <option value="all">Toate</option>
+                <option value="completed">Finalizate</option>
+                <option value="draft">Draft</option>
+              </select>
+            </FF>
+            <FF label="De la"><input className="inp" type="date" value={fDateFrom} onChange={e => setFDateFrom(e.target.value)} /></FF>
+            <FF label="Până la"><input className="inp" type="date" value={fDateTo} onChange={e => setFDateTo(e.target.value)} /></FF>
+          </div>
+          <div style={{ fontSize: 12, color: T.inkLight, marginTop: 8 }}>{filtered.length} fișe găsite din {medRecords.length} total</div>
         </div>
         {filtered.length === 0 ? <div className="card"><Empty icon="clip" title="Nicio fișă" desc="" /></div> : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {filtered.map(r => (
-              <div key={r.id} className="card" style={{ padding: 14 }}>
+              <div key={r.id} className="card" style={{ padding: 14, borderLeft: `3px solid ${r.status === 'completed' ? T.success : T.warning}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
                   <Av name={r.patientName} size={36} variant="blue" />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.patientName}</div>
-                    <div style={{ fontSize: 12, color: T.inkMid }}>Dr. {r.doctorName}</div>
+                    <div style={{ fontSize: 12, color: T.inkMid }}>{r.doctorName} · {r.created_at ? new Date(r.created_at).toLocaleDateString('ro-RO') : '—'}</div>
                   </div>
                   <Tag v={r.status === 'completed' ? 'green' : 'yellow'} dot>{r.status === 'completed' ? 'Finalizată' : 'Draft'}</Tag>
                 </div>
@@ -505,6 +544,13 @@ export default function AdminApp({ profile, onLogout, showToast }) {
   return (
     <div style={{ minHeight: '100vh', background: T.bg }}>
       <Header name="Admin Clinică" variant="orange" role="admin" onLogout={onLogout} mob={mob} />
+      <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: '8px 16px', display: 'flex', gap: 8, overflowX: 'auto', position: 'sticky', top: 57, zIndex: 30, WebkitOverflowScrolling: 'touch' }}>
+        {[{ id: 'appointments', l: 'Programări', ic: 'cal' }, { id: 'records', l: 'Fișe medicale', ic: 'clip' }].map(item => (
+          <button key={item.id} className={`chip ${page === item.id ? 'on' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }} onClick={() => setPage(item.id)}>
+            <Ic n={item.ic} s={12} c={page === item.id ? '#fff' : T.inkMid} /> {item.l}
+          </button>
+        ))}
+      </div>
       <main style={{ padding: mob ? '16px 16px 80px' : '24px 28px', maxWidth: 1000, margin: '0 auto' }}>
         <h1 style={{ fontSize: mob ? 20 : 22, fontWeight: 800, marginBottom: 16 }}>{titles[page]}</h1>
         {content[page]}
