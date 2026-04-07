@@ -63,7 +63,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
     { id: 'dashboard', l: 'Panou', ic: 'home', badge: 0 },
     { id: 'patients', l: 'Pacienți', ic: 'users', badge: 0 },
     { id: 'doctors', l: 'Medici', ic: 'steth', badge: 0 },
-    { id: 'records', l: 'Fișe', ic: 'clip', badge: 0 },
+    { id: 'services', l: 'Servicii', ic: 'svc', badge: 0 },
     { id: 'analyses', l: 'Analize', ic: 'bar', badge: 0 },
     { id: 'requests', l: 'Cereri', ic: 'bell', badge: pendingReqs },
   ]
