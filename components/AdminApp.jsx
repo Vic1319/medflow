@@ -102,7 +102,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
         {[{ label: 'Pacienți', value: pats.length, icon: 'users', color: T.blue, bg: '#EFF6FF', p: 'patients' },
           { label: 'Medici', value: docs.length, icon: 'steth', color: T.purple, bg: T.purpleBg, p: 'doctors' },
           { label: 'Programări', value: appts.length, icon: 'cal', color: T.cyan, bg: T.cyanDim, p: 'appointments' },
-          { label: 'Analize', value: analyses.length, icon: 'bar', color: T.warning, bg: T.warningBg, p: 'analyses' }].map((s, i) => (
+          { label: 'Servicii', value: svcs.length, icon: 'svc', color: T.success, bg: T.successBg, p: 'services' }].map((s, i) => (
           <StatBox key={i} {...s} onClick={() => setPage(s.p)} />
         ))}
       </div>
