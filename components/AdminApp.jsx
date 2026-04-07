@@ -145,9 +145,9 @@ export default function AdminApp({ profile, onLogout, showToast }) {
             <div key={p.id} className="card" style={{ padding: 14, marginBottom: 8, cursor: 'pointer' }} onClick={() => setViewPatId(p.id)}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <Av name={p.name} size={40} variant="green" />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600 }}>{p.name} <span style={{ fontWeight: 400, color: T.inkFaint, fontSize: 12 }}>({p.email})</span></div>
-                  <div style={{ fontSize: 12, color: T.inkLight }}>{age(p.dob)} ani · {p.doctor} · {pDocs} medici</div>
+                <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                  <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name} <span style={{ fontWeight: 400, color: T.inkFaint, fontSize: 12 }}>({p.email})</span></div>
+                  <div style={{ fontSize: 12, color: T.inkLight, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{age(p.dob)} ani · {p.doctor} · {pDocs} medici</div>
                 </div>
                 <Tag v={PSTATUS[p.status] || 'default'} dot>{p.status}</Tag>
                 <button className="btn-g" style={{ padding: '6px 8px', flexShrink: 0 }} onClick={e => { e.stopPropagation(); setAssignDocPat(p) }}><Ic n="steth" s={13} /></button>
@@ -182,9 +182,9 @@ export default function AdminApp({ profile, onLogout, showToast }) {
                 <div style={{ padding: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                     <Av name={d.name} size={48} variant={d.av} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700 }}>{d.name}</div>
-                      <div style={{ fontSize: 12, color: T.inkMid }}>{d.spec} · {d.email}</div>
+                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                      <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
+                      <div style={{ fontSize: 12, color: T.inkMid, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.spec} · {d.email}</div>
                     </div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 12 }}>
@@ -232,9 +232,9 @@ export default function AdminApp({ profile, onLogout, showToast }) {
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{a.time}</div>
                 <div style={{ fontSize: 9, color: 'rgba(255,255,255,.7)' }}>{fmtS(a.date)}</div>
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600 }}>{a.patient}</div>
-                <div style={{ fontSize: 12, color: T.inkLight }}>{a.doctor} · {a.type}</div>
+              <div style={{ flex: 1, overflow: 'hidden' }}>
+                <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.patient}</div>
+                <div style={{ fontSize: 12, color: T.inkLight, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.doctor} · {a.type}</div>
               </div>
               <Tag v={ASTATUS[a.status] || 'default'} dot>{a.status}</Tag>
             </div>
@@ -418,9 +418,9 @@ export default function AdminApp({ profile, onLogout, showToast }) {
               <div key={r.id} className="card" style={{ padding: 14, borderLeft: `3px solid ${r.status === 'completed' ? T.success : T.warning}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
                   <Av name={r.patientName} size={36} variant="blue" />
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
                     <div style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.patientName}</div>
-                    <div style={{ fontSize: 12, color: T.inkMid }}>{r.doctorName} · {r.created_at ? new Date(r.created_at).toLocaleDateString('ro-RO') : '—'}</div>
+                    <div style={{ fontSize: 12, color: T.inkMid, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.doctorName} · {r.created_at ? new Date(r.created_at).toLocaleDateString('ro-RO') : '—'}</div>
                   </div>
                   <Tag v={r.status === 'completed' ? 'green' : 'yellow'} dot>{r.status === 'completed' ? 'Finalizată' : 'Draft'}</Tag>
                 </div>
@@ -518,9 +518,9 @@ export default function AdminApp({ profile, onLogout, showToast }) {
             {[...list].sort((a,b) => b.date?.localeCompare(a.date)).map(a => (
               <div key={a.id} className="card" style={{ padding: 16, borderLeft: `4px solid ${a.status === 'Normal' ? T.success : a.status === 'Anormal' ? T.danger : T.warning}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 15 }}>{a.type}</div>
-                    <div style={{ fontSize: 12, color: T.inkMid, marginTop: 2 }}>{a.patientName} · {a.doctorName} · {fmt(a.date)}</div>
+                  <div style={{ overflow: 'hidden', flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.type}</div>
+                    <div style={{ fontSize: 12, color: T.inkMid, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.patientName} · {a.doctorName} · {fmt(a.date)}</div>
                   </div>
                   <Tag v={ASTATS_C[a.status] || 'default'} dot>{a.status}</Tag>
                 </div>

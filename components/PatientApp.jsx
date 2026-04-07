@@ -339,9 +339,9 @@ export default function PatientApp({ profile, onLogout, showToast }) {
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{a.time}</div>
                   <div style={{ fontSize: 9, color: 'rgba(255,255,255,.7)' }}>{fmtS(a.date)}</div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>{a.type}</div>
-                  <div style={{ fontSize: 12, color: T.inkLight }}>{a.doctor}</div>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                  <div style={{ fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.type}</div>
+                  <div style={{ fontSize: 12, color: T.inkLight, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.doctor}</div>
                 </div>
                 <Tag v={ASTATUS[a.status] || 'default'} dot>{a.status}</Tag>
               </div>

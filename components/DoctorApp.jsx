@@ -153,12 +153,12 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
                 <div key={p.id} className="card" style={{ padding: 16, cursor: 'pointer' }} onClick={() => setViewPatId(p.id)}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <Av name={p.name} size={42} variant="green" />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600 }}>{p.name}</div>
-                      <div style={{ fontSize: 12, color: T.inkLight }}>{age(p.dob)} ani · {pa.length} vizite · {pRecs.filter(r => r.status === 'completed').length} fișe completate</div>
+                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                      <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
+                      <div style={{ fontSize: 12, color: T.inkLight, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{age(p.dob)} ani · {pa.length} vizite · {pRecs.filter(r => r.status === 'completed').length} fișe</div>
                     </div>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                      {pPending > 0 && <Tag v="yellow" dot>{pPending} pending</Tag>}
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+                      {pPending > 0 && <Tag v="yellow" dot>{pPending}</Tag>}
                       <Tag v={PSTATUS[p.status] || 'default'} dot>{p.status}</Tag>
                       <Ic n="eye" s={16} c={T.blue} />
                     </div>
@@ -196,11 +196,11 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
                       <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{a.time}</div>
                       <div style={{ fontSize: 10, color: 'rgba(255,255,255,.7)' }}>{fmtS(a.date)}</div>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600 }}>{a.patient}</div>
-                      <div style={{ fontSize: 12, color: T.inkLight }}>{a.type}</div>
+                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                      <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.patient}</div>
+                      <div style={{ fontSize: 12, color: T.inkLight, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.type} · {fmtS(a.date)}</div>
                     </div>
-                    <Tag v={ATYPE[a.type] || 'blue'} dot>{a.type}</Tag>
+                    <Tag v={ASTATUS[a.status] || 'default'} dot>{a.status}</Tag>
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {/* Buton fișă de control întotdeauna vizibil */}
@@ -247,10 +247,10 @@ export default function DoctorApp({ profile, onLogout, showToast }) {
                     <div style={{ width: 40, height: 40, borderRadius: T.r12, background: r.status === 'completed' ? T.successBg : T.warningBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Ic n="clip" s={18} c={r.status === 'completed' ? T.success : T.warning} />
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700 }}>{r.patientName}</div>
-                      <div style={{ fontSize: 12, color: T.inkLight }}>{appt ? `${fmt(appt.date)} · ${appt.time}` : '—'}</div>
-                      {r.diagnostic && <div style={{ fontSize: 12, color: T.blue, marginTop: 2 }}>Dx: {r.diagnostic.slice(0, 60)}{r.diagnostic.length > 60 ? '...' : ''}</div>}
+                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                      <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.patientName}</div>
+                      <div style={{ fontSize: 12, color: T.inkLight, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{appt ? `${fmt(appt.date)} · ${appt.time}` : '—'}</div>
+                      {r.diagnostic && <div style={{ fontSize: 12, color: T.blue, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Dx: {r.diagnostic}</div>}
                     </div>
                     <Tag v={r.status === 'completed' ? 'green' : r.status === 'draft' ? 'yellow' : 'default'} dot>
                       {r.status === 'completed' ? 'Completată' : r.status === 'draft' ? 'Ciornă' : 'Nouă'}
