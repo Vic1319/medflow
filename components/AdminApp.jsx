@@ -29,6 +29,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
   const [analyses, setAnalyses] = useState([])
   const [openRecord, setOpenRecord] = useState(null)
   const [docServicesDid, setDocServicesDid] = useState(null)
+  const [docModal, setDocModal] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const fetchAll = useCallback(async () => {
@@ -163,87 +164,164 @@ export default function AdminApp({ profile, onLogout, showToast }) {
   }
 
   const AllDoc = () => {
-    const toggleDoc = async (d) => {
+    const toggleDoc = async (d, e) => {
+      e.stopPropagation()
       await supabase.from('doctors').update({ is_active: !d.on }).eq('id', d.id)
       showToast(d.on ? 'Dezactivat' : 'Activat'); await fetchAll()
     }
-    const deleteDoc = async (id) => {
+    const deleteDoc = async (id, e) => {
+      e.stopPropagation()
       await supabase.from('doctors').delete().eq('id', id)
       showToast('Medic șters', 'info'); await fetchAll()
     }
     return (
       <div className="fade-up">
+        <div style={{ fontSize: 13, color: T.inkLight, marginBottom: 10 }}>Apasă pe un medic pentru detalii și statistici complete:</div>
         <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: 12 }}>
-          {docs.map(d => {
-            const dAppts = appts.filter(a => a.doctorId === d.id)
-            const dPats = pats.filter(p => p.doctor === d.name).length
-            const dFinished = dAppts.filter(a => a.status === 'Finalizată').length
-            const dPending = dAppts.filter(a => a.status === 'În așteptare').length
-            const dCancelled = dAppts.filter(a => a.status === 'Anulată').length
-            const dRecords = medRecords.filter(r => r.doctorId === d.id)
-            const dAnalyses = analyses.filter(a => a.doctorId === d.id).length
-            const total = dAppts.length
-            return (
-              <div key={d.id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                <div style={{ height: 4, background: d.on ? `linear-gradient(90deg,${T.blue},${T.cyan})` : T.border }} />
-                <div style={{ padding: 16 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                    <Av name={d.name} size={48} variant={d.av} url={d.avatar_url} />
-                    <div style={{ flex: 1, overflow: 'hidden' }}>
-                      <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
-                      <div style={{ fontSize: 12, color: T.inkMid, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.spec} · {d.exp}</div>
-                      <div style={{ fontSize: 11, color: T.inkFaint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.email}</div>
-                    </div>
-                    <Tag v={d.on ? 'green' : 'default'} dot>{d.on ? 'Activ' : 'Inactiv'}</Tag>
+          {docs.map(d => (
+            <div key={d.id} className="card" style={{ padding: 0, overflow: 'hidden', cursor: 'pointer' }} onClick={() => setDocModal(d.id)}>
+              <div style={{ height: 4, background: d.on ? `linear-gradient(90deg,${T.blue},${T.cyan})` : T.border }} />
+              <div style={{ padding: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <Av name={d.name} size={48} variant={d.av} url={d.avatar_url} />
+                  <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
+                    <div style={{ fontSize: 12, color: T.inkMid, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.spec} · {d.exp}</div>
+                    <div style={{ fontSize: 11, color: T.inkFaint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.email}</div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6, marginBottom: 12 }}>
-                    {[['Pacienți', dPats, T.blue], ['Programări', total, T.cyan], ['Fișe', dRecords.length, T.purple], ['Analize', dAnalyses, T.warning]].map(([k, v, c]) => (
-                      <div key={k} style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: T.r8, padding: '8px 4px', textAlign: 'center' }}>
-                        <div style={{ fontSize: 18, fontWeight: 800, color: c }}>{v}</div>
-                        <div style={{ fontSize: 9, color: T.inkFaint, marginTop: 1 }}>{k}</div>
-                      </div>
-                    ))}
-                  </div>
-                  {total > 0 && (
-                    <div style={{ marginBottom: 12 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                        <span style={{ fontSize: 11, color: T.inkMid, fontWeight: 600 }}>Programări</span>
-                        <span style={{ fontSize: 11, color: T.inkFaint }}>{dFinished} finalizate · {dPending} așteptare · {dCancelled} anulate</span>
-                      </div>
-                      <div style={{ height: 6, borderRadius: 3, background: T.border, overflow: 'hidden', display: 'flex' }}>
-                        {dFinished > 0 && <div style={{ width: `${(dFinished/total)*100}%`, background: T.success }} />}
-                        {dPending > 0 && <div style={{ width: `${(dPending/total)*100}%`, background: T.warning }} />}
-                        {dCancelled > 0 && <div style={{ width: `${(dCancelled/total)*100}%`, background: T.danger }} />}
-                      </div>
-                      <div style={{ display: 'flex', gap: 10, marginTop: 5 }}>
-                        {[['Finalizate', dFinished, T.success], ['Așteptare', dPending, T.warning], ['Anulate', dCancelled, T.danger]].map(([l, v, c]) => (
-                          <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <div style={{ width: 7, height: 7, borderRadius: '50%', background: c, flexShrink: 0 }} />
-                            <span style={{ fontSize: 10, color: T.inkFaint }}>{l}: <strong style={{ color: c }}>{v}</strong></span>
-                          </div>
-                        ))}
-                      </div>
+                  <Tag v={d.on ? 'green' : 'default'} dot>{d.on ? 'Activ' : 'Inactiv'}</Tag>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6, marginBottom: 12 }}>
+                  {[['Pacienți', pats.filter(p => p.doctor === d.name).length, T.blue], ['Prog.', appts.filter(a => a.doctorId === d.id).length, T.cyan], ['Fișe', medRecords.filter(r => r.doctorId === d.id).length, T.purple], ['Analize', analyses.filter(a => a.doctorId === d.id).length, T.warning]].map(([k, v, c]) => (
+                    <div key={k} style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: T.r8, padding: '8px 4px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: c }}>{v}</div>
+                      <div style={{ fontSize: 9, color: T.inkFaint, marginTop: 1 }}>{k}</div>
                     </div>
-                  )}
-                  {dRecords.length > 0 && (
-                    <div style={{ marginBottom: 12 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                        <span style={{ fontSize: 11, color: T.inkMid, fontWeight: 600 }}>Fișe medicale</span>
-                        <span style={{ fontSize: 11, color: T.inkFaint }}>{dRecords.filter(r => r.status === 'completed').length} completate din {dRecords.length}</span>
-                      </div>
-                      <div className="pbar"><div className="pfill" style={{ width: `${(dRecords.filter(r => r.status === 'completed').length / dRecords.length) * 100}%`, background: T.purple }} /></div>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    <button className="btn-g" style={{ flex: 1, justifyContent: 'center', fontSize: 12, minWidth: 'calc(50% - 3px)' }} onClick={() => setEditScheduleDoc(d)}><Ic n="cal" s={13} /> Program</button>
-                    <button className="btn-g" style={{ flex: 1, justifyContent: 'center', fontSize: 12, minWidth: 'calc(50% - 3px)' }} onClick={() => setDocServicesDid(d.id)}><Ic n="svc" s={13} /> Servicii {(d.services || []).length > 0 ? `(${(d.services || []).length})` : ''}</button>
-                    <button className="btn-g" style={{ flex: 1, justifyContent: 'center', fontSize: 12 }} onClick={() => toggleDoc(d)}>{d.on ? 'Dezactivează' : 'Activează'}</button>
-                    <button className="btn-d" style={{ padding: '8px 10px' }} onClick={() => deleteDoc(d.id)}><Ic n="trash" s={13} /></button>
-                  </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
+                  <button className="btn-g" style={{ flex: 1, justifyContent: 'center', fontSize: 12, minWidth: 'calc(50% - 3px)' }} onClick={e => { e.stopPropagation(); setEditScheduleDoc(d) }}><Ic n="cal" s={13} /> Program</button>
+                  <button className="btn-g" style={{ flex: 1, justifyContent: 'center', fontSize: 12, minWidth: 'calc(50% - 3px)' }} onClick={e => { e.stopPropagation(); setDocServicesDid(d.id) }}><Ic n="svc" s={13} /> Servicii {(d.services || []).length > 0 ? `(${(d.services || []).length})` : ''}</button>
+                  <button className="btn-g" style={{ flex: 1, justifyContent: 'center', fontSize: 12 }} onClick={e => toggleDoc(d, e)}>{d.on ? 'Dezactivează' : 'Activează'}</button>
+                  <button className="btn-d" style={{ padding: '8px 10px' }} onClick={e => deleteDoc(d.id, e)}><Ic n="trash" s={13} /></button>
                 </div>
               </div>
-            )
-          })}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const DocModal = () => {
+    const d = docs.find(x => x.id === docModal)
+    if (!d) return null
+    const dAppts = appts.filter(a => a.doctorId === d.id)
+    const dPats = pats.filter(p => p.doctor === d.name)
+    const dFinished = dAppts.filter(a => a.status === 'Finalizată').length
+    const dPending = dAppts.filter(a => a.status === 'În așteptare').length
+    const dCancelled = dAppts.filter(a => a.status === 'Anulată').length
+    const dRecords = medRecords.filter(r => r.doctorId === d.id)
+    const dAnalyses = analyses.filter(a => a.doctorId === d.id)
+    const dSvcs = svcs.filter(s => (d.services || []).includes(s.id))
+    const total = dAppts.length
+    const recentAppts = [...dAppts].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 6)
+    const revenue = dAppts.filter(a => a.status === 'Finalizată').reduce((sum, a) => {
+      const svc = svcs.find(s => s.id === a.serviceId)
+      const num = parseFloat((svc?.price || '').replace(/[^0-9.]/g, ''))
+      return sum + (isNaN(num) ? 0 : num)
+    }, 0)
+    return (
+      <div className="ovl" onClick={e => e.target === e.currentTarget && setDocModal(null)}>
+        <div className="modal" style={{ padding: 0, maxHeight: '88vh', overflowY: 'auto', maxWidth: 540 }}>
+          <div style={{ height: 4, background: d.on ? `linear-gradient(90deg,${T.blue},${T.cyan})` : T.border, flexShrink: 0 }} />
+          <div style={{ padding: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+              <div style={{ display: 'flex', gap: 14, alignItems: 'center', flex: 1, minWidth: 0 }}>
+                <Av name={d.name} size={64} variant={d.av} url={d.avatar_url} />
+                <div style={{ overflow: 'hidden' }}>
+                  <div style={{ fontWeight: 800, fontSize: 18, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
+                  <div style={{ fontSize: 13, color: T.inkMid }}>{d.spec}</div>
+                  <div style={{ fontSize: 12, color: T.inkFaint }}>{d.exp}</div>
+                  <div style={{ fontSize: 11, color: T.inkFaint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.email}</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end', flexShrink: 0, marginLeft: 12 }}>
+                <Tag v={d.on ? 'green' : 'default'} dot>{d.on ? 'Activ' : 'Inactiv'}</Tag>
+                <button className="btn-g" style={{ padding: '5px 8px' }} onClick={() => setDocModal(null)}><Ic n="x" s={15} /></button>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 16 }}>
+              {[['Pacienți', dPats.length, T.blue], ['Programări', total, T.cyan], ['Fișe', dRecords.length, T.purple], ['Analize', dAnalyses.length, T.warning]].map(([k, v, c]) => (
+                <div key={k} style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: T.r8, padding: '10px 6px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: c }}>{v}</div>
+                  <div style={{ fontSize: 10, color: T.inkFaint, marginTop: 2 }}>{k}</div>
+                </div>
+              ))}
+            </div>
+            {revenue > 0 && (
+              <div style={{ background: 'linear-gradient(135deg,#1E3A5F,#1E5F8F)', borderRadius: T.r12, padding: '14px 18px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Ic n="star" s={22} c="#FFD700" />
+                <div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,.7)' }}>Venituri estimate (finalizate)</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: '#FFD700' }}>{revenue.toLocaleString()} RON</div>
+                </div>
+              </div>
+            )}
+            {total > 0 && (
+              <div className="card" style={{ padding: 14, marginBottom: 12 }}>
+                <div style={{ fontWeight: 700, marginBottom: 10, fontSize: 13 }}>Statistici programări</div>
+                <div style={{ height: 10, borderRadius: 5, background: T.border, overflow: 'hidden', display: 'flex', marginBottom: 10 }}>
+                  {dFinished > 0 && <div style={{ width: `${(dFinished/total)*100}%`, background: T.success }} />}
+                  {dPending > 0 && <div style={{ width: `${(dPending/total)*100}%`, background: T.warning }} />}
+                  {dCancelled > 0 && <div style={{ width: `${(dCancelled/total)*100}%`, background: T.danger }} />}
+                </div>
+                <div style={{ display: 'flex', gap: 16 }}>
+                  {[['Finalizate', dFinished, T.success], ['Așteptare', dPending, T.warning], ['Anulate', dCancelled, T.danger]].map(([l, v, c]) => (
+                    <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: c, flexShrink: 0 }} />
+                      <span style={{ fontSize: 12, color: T.inkMid }}>{l}: <strong style={{ color: c }}>{v}</strong></span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {dRecords.length > 0 && (
+              <div className="card" style={{ padding: 14, marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontWeight: 700, fontSize: 13 }}>Fișe medicale</span>
+                  <span style={{ fontSize: 12, color: T.inkFaint }}>{dRecords.filter(r => r.status === 'completed').length} / {dRecords.length} completate</span>
+                </div>
+                <div className="pbar"><div className="pfill" style={{ width: `${(dRecords.filter(r => r.status === 'completed').length / dRecords.length) * 100}%`, background: T.purple }} /></div>
+              </div>
+            )}
+            {recentAppts.length > 0 && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontWeight: 700, marginBottom: 8, fontSize: 13 }}>Programări recente</div>
+                {recentAppts.map((a, i) => (
+                  <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < recentAppts.length - 1 ? `1px solid ${T.border}` : 'none' }}>
+                    <div style={{ fontSize: 11, color: T.inkFaint, minWidth: 65, flexShrink: 0 }}>{fmt(a.date)} {a.time}</div>
+                    <div style={{ flex: 1, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.patient}</div>
+                    <Tag v={ASTATUS[a.status] || 'default'} dot>{a.status}</Tag>
+                  </div>
+                ))}
+              </div>
+            )}
+            {dSvcs.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontWeight: 700, marginBottom: 8, fontSize: 13 }}>Servicii oferite</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {dSvcs.map(s => <span key={s.id} className="chip">{s.name} · {s.price}</span>)}
+                </div>
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button className="btn-g" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setEditScheduleDoc(d); setDocModal(null) }}><Ic n="cal" s={13} /> Program</button>
+              <button className="btn-g" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setDocServicesDid(d.id); setDocModal(null) }}><Ic n="svc" s={13} /> Servicii</button>
+              <button className="btn-g" style={{ flex: 1, justifyContent: 'center' }} onClick={async () => { await supabase.from('doctors').update({ is_active: !d.on }).eq('id', d.id); showToast(d.on ? 'Dezactivat' : 'Activat'); await fetchAll() }}>{d.on ? 'Dezactivează' : 'Activează'}</button>
+              <button className="btn-d" style={{ padding: '8px 12px' }} onClick={async () => { await supabase.from('doctors').delete().eq('id', d.id); showToast('Medic șters', 'info'); await fetchAll(); setDocModal(null) }}><Ic n="trash" s={13} /></button>
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -573,6 +651,159 @@ export default function AdminApp({ profile, onLogout, showToast }) {
     )
   }
 
+  const StatsPage = () => {
+    const [period, setPeriod] = useState('luna')
+    const now = new Date()
+    const today = now.toISOString().slice(0, 10)
+    const weekStart = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
+    const yearStart = `${now.getFullYear()}-01-01`
+    const filtered = period === 'azi' ? appts.filter(a => a.date === today)
+      : period === 'saptamana' ? appts.filter(a => a.date >= weekStart)
+      : period === 'luna' ? appts.filter(a => a.date >= monthStart)
+      : period === 'an' ? appts.filter(a => a.date >= yearStart)
+      : appts
+    const total = filtered.length
+    const finished = filtered.filter(a => a.status === 'Finalizată').length
+    const pending = filtered.filter(a => a.status === 'În așteptare').length
+    const cancelled = filtered.filter(a => a.status === 'Anulată').length
+    const rate = total > 0 ? Math.round((finished / total) * 100) : 0
+    const revenue = filtered.filter(a => a.status === 'Finalizată').reduce((sum, a) => {
+      const svc = svcs.find(s => s.id === a.serviceId)
+      const num = parseFloat((svc?.price || '').replace(/[^0-9.]/g, ''))
+      return sum + (isNaN(num) ? 0 : num)
+    }, 0)
+    const activePats = [...new Set(filtered.map(a => a.patientId))].length
+    const docStats = docs.map(d => {
+      const da = filtered.filter(a => a.doctorId === d.id)
+      const fin = da.filter(a => a.status === 'Finalizată').length
+      const rev = da.filter(a => a.status === 'Finalizată').reduce((sum, a) => {
+        const svc = svcs.find(s => s.id === a.serviceId)
+        const num = parseFloat((svc?.price || '').replace(/[^0-9.]/g, ''))
+        return sum + (isNaN(num) ? 0 : num)
+      }, 0)
+      return { ...d, total: da.length, finished: fin, revenue: rev }
+    }).sort((a, b) => b.total - a.total)
+    const svcStats = svcs.map(s => ({ ...s, count: filtered.filter(a => a.serviceId === s.id).length })).filter(s => s.count > 0).sort((a, b) => b.count - a.count)
+    const topDoc = docStats.find(d => d.total > 0)
+    return (
+      <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
+          {[['azi', 'Azi'], ['saptamana', '7 zile'], ['luna', 'Luna aceasta'], ['an', 'Anul acesta'], ['total', 'Total']].map(([v, l]) => (
+            <button key={v} className={`chip ${period === v ? 'on' : ''}`} onClick={() => setPeriod(v)} style={{ flexShrink: 0 }}>{l}</button>
+          ))}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : 'repeat(4,1fr)', gap: mob ? 10 : 14 }}>
+          {[
+            { l: 'Programări totale', v: total, c: T.cyan, ic: 'cal' },
+            { l: 'Finalizate', v: finished, c: T.success, ic: 'chk' },
+            { l: 'Rată finalizare', v: `${rate}%`, c: T.blue, ic: 'bar' },
+            { l: 'Venituri estimate', v: revenue > 0 ? `${revenue.toLocaleString()} RON` : '—', c: T.purple, ic: 'star' },
+          ].map(s => (
+            <div key={s.l} className="card" style={{ padding: mob ? 14 : 18 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <Ic n={s.ic} s={16} c={s.c} />
+                <span style={{ fontSize: 11, color: T.inkMid }}>{s.l}</span>
+              </div>
+              <div style={{ fontSize: mob ? 24 : 30, fontWeight: 800, color: s.c, lineHeight: 1 }}>{s.v}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : 'repeat(4,1fr)', gap: mob ? 10 : 14 }}>
+          {[
+            { l: 'În așteptare', v: pending, c: T.warning },
+            { l: 'Anulate', v: cancelled, c: T.danger },
+            { l: 'Pacienți activi', v: activePats, c: T.blue },
+            { l: 'Total pacienți clinic', v: pats.length, c: T.inkMid },
+          ].map(s => (
+            <div key={s.l} className="card" style={{ padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: T.r8, background: T.surfaceAlt, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span style={{ fontSize: 20, fontWeight: 800, color: s.c }}>{s.v}</span>
+              </div>
+              <span style={{ fontSize: 12, color: T.inkMid }}>{s.l}</span>
+            </div>
+          ))}
+        </div>
+        <div className="card" style={{ padding: mob ? 16 : 20 }}>
+          <div style={{ fontWeight: 700, marginBottom: 12 }}>Detalii status programări</div>
+          {[['Finalizate (intrări)', finished, T.success], ['În așteptare', pending, T.warning], ['Anulate (ieșiri)', cancelled, T.danger]].map(([l, v, c]) => (
+            <div key={l} style={{ marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <span style={{ fontSize: 13, color: T.inkMid }}>{l}</span>
+                <span style={{ fontSize: 13, fontWeight: 700 }}>{v} <span style={{ fontWeight: 400, color: T.inkFaint }}>({total > 0 ? Math.round((v / total) * 100) : 0}%)</span></span>
+              </div>
+              <div className="pbar"><div className="pfill" style={{ width: `${total > 0 ? (v / total) * 100 : 0}%`, background: c }} /></div>
+            </div>
+          ))}
+        </div>
+        {docStats.filter(d => d.total > 0).length > 0 && (
+          <div className="card" style={{ padding: mob ? 16 : 20 }}>
+            <div style={{ fontWeight: 700, marginBottom: 14 }}>Performanță medici</div>
+            {docStats.filter(d => d.total > 0).map(d => (
+              <div key={d.id} style={{ marginBottom: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                  <Av name={d.name} size={30} variant={d.av} />
+                  <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
+                      <div style={{ display: 'flex', gap: 10, flexShrink: 0, marginLeft: 8 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: T.cyan }}>{d.total} prog.</span>
+                        {d.revenue > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: T.purple }}>{d.revenue.toLocaleString()} RON</span>}
+                      </div>
+                    </div>
+                    <div style={{ height: 6, borderRadius: 3, background: T.border, overflow: 'hidden', display: 'flex' }}>
+                      {d.finished > 0 && <div style={{ width: `${(d.finished / Math.max(d.total, 1)) * 100}%`, background: T.success }} />}
+                      {(d.total - d.finished) > 0 && <div style={{ width: `${((d.total - d.finished) / Math.max(d.total, 1)) * 100}%`, background: T.warning }} />}
+                    </div>
+                    <div style={{ fontSize: 10, color: T.inkFaint, marginTop: 3 }}>{d.finished} finalizate · {d.total > 0 ? Math.round((d.finished / d.total) * 100) : 0}% rată succes</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {svcStats.length > 0 && (
+          <div className="card" style={{ padding: mob ? 16 : 20 }}>
+            <div style={{ fontWeight: 700, marginBottom: 14 }}>Servicii utilizate</div>
+            {svcStats.map((s, i) => (
+              <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <div style={{ width: 26, height: 26, borderRadius: T.r8, background: i === 0 ? '#FEF3C7' : T.surfaceAlt, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: i === 0 ? '#92400E' : T.inkFaint, flexShrink: 0 }}>{i + 1}</div>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: T.cyan, flexShrink: 0, marginLeft: 8 }}>{s.count}×</span>
+                  </div>
+                  <div style={{ height: 4, borderRadius: 2, background: T.border, overflow: 'hidden' }}>
+                    <div style={{ width: `${(s.count / svcStats[0].count) * 100}%`, background: T.cyan }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="card" style={{ padding: mob ? 16 : 20 }}>
+          <div style={{ fontWeight: 700, marginBottom: 12 }}>Sumar clinică</div>
+          <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : 'repeat(3,1fr)', gap: 10 }}>
+            {[
+              { l: 'Total medici', v: docs.length, sub: `${docs.filter(d => d.on).length} activi`, c: T.blue },
+              { l: 'Total servicii', v: svcs.length, sub: `${svcs.filter(s => s.active).length} active`, c: T.cyan },
+              { l: 'Fișe medicale', v: medRecords.length, sub: `${medRecords.filter(r => r.status === 'completed').length} completate`, c: T.purple },
+              { l: 'Analize', v: analyses.length, sub: `${analyses.filter(a => a.status === 'Anormal').length} anormale`, c: T.warning },
+              { l: 'Medic top', v: topDoc?.name?.replace('Dr. ', '') || '—', sub: topDoc ? `${topDoc.total} programări` : '', c: T.success },
+              { l: 'Total programări', v: appts.length, sub: `${appts.filter(a => a.status === 'Finalizată').length} finalizate total`, c: T.inkMid },
+            ].map(s => (
+              <div key={s.l} style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: T.r8, padding: 12 }}>
+                <div style={{ fontSize: 11, color: T.inkFaint, marginBottom: 4 }}>{s.l}</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: s.c, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.v}</div>
+                {s.sub && <div style={{ fontSize: 10, color: T.inkFaint, marginTop: 2 }}>{s.sub}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const DocServicesModal = () => {
     const d = docs.find(x => x.id === docServicesDid)
     if (!d) return null
@@ -628,15 +859,15 @@ export default function AdminApp({ profile, onLogout, showToast }) {
     dashboard: 'Panou Administrare', patients: `Pacienți (${pats.length})`,
     doctors: `Medici (${docs.length})`, appointments: `Programări (${appts.length})`,
     records: `Fișe medicale (${medRecords.length})`, analyses: `Analize (${analyses.length})`,
-    services: `Servicii (${svcs.length})`, requests: 'Cereri ștergere',
+    services: `Servicii (${svcs.length})`, requests: 'Cereri ștergere', stats: 'Statistici & Rapoarte',
   }
-  const content = { dashboard: <Dash />, patients: <AllPat />, doctors: <AllDoc />, appointments: <AllAppt />, records: <AllRecords />, analyses: <AllAnalyses />, services: <SvcsAdm />, requests: <Reqs /> }
+  const content = { dashboard: <Dash />, patients: <AllPat />, doctors: <AllDoc />, appointments: <AllAppt />, records: <AllRecords />, analyses: <AllAnalyses />, services: <SvcsAdm />, requests: <Reqs />, stats: <StatsPage /> }
 
   return (
     <div style={{ minHeight: '100vh', background: T.bg }}>
       <Header name="Admin Clinică" variant="orange" role="admin" onLogout={onLogout} mob={mob} />
       <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: '8px 16px', display: 'flex', gap: 8, overflowX: 'auto', position: 'sticky', top: 57, zIndex: 30, WebkitOverflowScrolling: 'touch' }}>
-        {[{ id: 'appointments', l: 'Programări', ic: 'cal' }, { id: 'records', l: 'Fișe medicale', ic: 'clip' }].map(item => (
+        {[{ id: 'appointments', l: 'Programări', ic: 'cal' }, { id: 'records', l: 'Fișe medicale', ic: 'clip' }, { id: 'stats', l: 'Statistici', ic: 'bar' }].map(item => (
           <button key={item.id} className={`chip ${page === item.id ? 'on' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }} onClick={() => setPage(item.id)}>
             <Ic n={item.ic} s={12} c={page === item.id ? '#fff' : T.inkMid} /> {item.l}
           </button>
@@ -651,6 +882,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
       {editScheduleDoc && <ScheduleEditor doc={editScheduleDoc} onClose={() => setEditScheduleDoc(null)} onSaved={() => { fetchAll(); showToast('Program salvat!') }} />}
       {assignDocPat && <AssignDocModal pat={assignDocPat} onClose={() => setAssignDocPat(null)} />}
       {openRecord && <MedicalRecordForm record={openRecord.record} appt={openRecord.appt} onClose={() => setOpenRecord(null)} onSaved={fetchAll} />}
+      {docModal && <DocModal />}
       {docServicesDid && <DocServicesModal />}
     </div>
   )
