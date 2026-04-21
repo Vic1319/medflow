@@ -787,11 +787,16 @@ ${svcStats.map((s, i) => `
   Raport generat automat de MedFlow &nbsp;·&nbsp; ${new Date().toLocaleString('ro-RO')}
 </div>
 </body></html>`
-      const w = window.open('', '_blank', 'width=900,height=700')
-      w.document.write(html)
-      w.document.close()
-      w.focus()
-      setTimeout(() => w.print(), 400)
+      const iframe = document.createElement('iframe')
+      iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none'
+      document.body.appendChild(iframe)
+      iframe.contentDocument.write(html)
+      iframe.contentDocument.close()
+      setTimeout(() => {
+        iframe.contentWindow.focus()
+        iframe.contentWindow.print()
+        setTimeout(() => document.body.removeChild(iframe), 2000)
+      }, 300)
     }
 
     return (
