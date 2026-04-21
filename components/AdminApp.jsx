@@ -175,27 +175,65 @@ export default function AdminApp({ profile, onLogout, showToast }) {
       <div className="fade-up">
         <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: 12 }}>
           {docs.map(d => {
+            const dAppts = appts.filter(a => a.doctorId === d.id)
             const dPats = pats.filter(p => p.doctor === d.name).length
-            const dAppts = appts.filter(a => a.doctorId === d.id).length
+            const dFinished = dAppts.filter(a => a.status === 'Finalizată').length
+            const dPending = dAppts.filter(a => a.status === 'În așteptare').length
+            const dCancelled = dAppts.filter(a => a.status === 'Anulată').length
+            const dRecords = medRecords.filter(r => r.doctorId === d.id)
+            const dAnalyses = analyses.filter(a => a.doctorId === d.id).length
+            const total = dAppts.length
             return (
               <div key={d.id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
                 <div style={{ height: 4, background: d.on ? `linear-gradient(90deg,${T.blue},${T.cyan})` : T.border }} />
                 <div style={{ padding: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                    <Av name={d.name} size={48} variant={d.av} />
+                    <Av name={d.name} size={48} variant={d.av} url={d.avatar_url} />
                     <div style={{ flex: 1, overflow: 'hidden' }}>
                       <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
-                      <div style={{ fontSize: 12, color: T.inkMid, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.spec} · {d.email}</div>
+                      <div style={{ fontSize: 12, color: T.inkMid, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.spec} · {d.exp}</div>
+                      <div style={{ fontSize: 11, color: T.inkFaint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.email}</div>
                     </div>
+                    <Tag v={d.on ? 'green' : 'default'} dot>{d.on ? 'Activ' : 'Inactiv'}</Tag>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 12 }}>
-                    {[['Pac.', dPats, T.blue], ['Prog.', dAppts, T.cyan], ['Exp.', d.exp, T.purple]].map(([k, v, c]) => (
-                      <div key={k} style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: T.r8, padding: 8, textAlign: 'center' }}>
-                        <div style={{ fontSize: 15, fontWeight: 800, color: c }}>{v}</div>
-                        <div style={{ fontSize: 10, color: T.inkFaint }}>{k}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6, marginBottom: 12 }}>
+                    {[['Pacienți', dPats, T.blue], ['Programări', total, T.cyan], ['Fișe', dRecords.length, T.purple], ['Analize', dAnalyses, T.warning]].map(([k, v, c]) => (
+                      <div key={k} style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: T.r8, padding: '8px 4px', textAlign: 'center' }}>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: c }}>{v}</div>
+                        <div style={{ fontSize: 9, color: T.inkFaint, marginTop: 1 }}>{k}</div>
                       </div>
                     ))}
                   </div>
+                  {total > 0 && (
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                        <span style={{ fontSize: 11, color: T.inkMid, fontWeight: 600 }}>Programări</span>
+                        <span style={{ fontSize: 11, color: T.inkFaint }}>{dFinished} finalizate · {dPending} așteptare · {dCancelled} anulate</span>
+                      </div>
+                      <div style={{ height: 6, borderRadius: 3, background: T.border, overflow: 'hidden', display: 'flex' }}>
+                        {dFinished > 0 && <div style={{ width: `${(dFinished/total)*100}%`, background: T.success }} />}
+                        {dPending > 0 && <div style={{ width: `${(dPending/total)*100}%`, background: T.warning }} />}
+                        {dCancelled > 0 && <div style={{ width: `${(dCancelled/total)*100}%`, background: T.danger }} />}
+                      </div>
+                      <div style={{ display: 'flex', gap: 10, marginTop: 5 }}>
+                        {[['Finalizate', dFinished, T.success], ['Așteptare', dPending, T.warning], ['Anulate', dCancelled, T.danger]].map(([l, v, c]) => (
+                          <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 7, height: 7, borderRadius: '50%', background: c, flexShrink: 0 }} />
+                            <span style={{ fontSize: 10, color: T.inkFaint }}>{l}: <strong style={{ color: c }}>{v}</strong></span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {dRecords.length > 0 && (
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                        <span style={{ fontSize: 11, color: T.inkMid, fontWeight: 600 }}>Fișe medicale</span>
+                        <span style={{ fontSize: 11, color: T.inkFaint }}>{dRecords.filter(r => r.status === 'completed').length} completate din {dRecords.length}</span>
+                      </div>
+                      <div className="pbar"><div className="pfill" style={{ width: `${(dRecords.filter(r => r.status === 'completed').length / dRecords.length) * 100}%`, background: T.purple }} /></div>
+                    </div>
+                  )}
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     <button className="btn-g" style={{ flex: 1, justifyContent: 'center', fontSize: 12, minWidth: 'calc(50% - 3px)' }} onClick={() => setEditScheduleDoc(d)}><Ic n="cal" s={13} /> Program</button>
                     <button className="btn-g" style={{ flex: 1, justifyContent: 'center', fontSize: 12, minWidth: 'calc(50% - 3px)' }} onClick={() => setDocServicesDid(d.id)}><Ic n="svc" s={13} /> Servicii {(d.services || []).length > 0 ? `(${(d.services || []).length})` : ''}</button>
