@@ -45,7 +45,12 @@ export default function PatientApp({ profile, onLogout, showToast }) {
 
   function BookingModal({ onClose, preDocId, preServiceId }) {
     const [selSvc, setSelSvc] = useState(preServiceId || svcs[0]?.id || 0)
-    const [selDoc, setSelDoc] = useState(preDocId || docs[0]?.id || 0)
+    const initDoc = () => {
+      if (preDocId) return preDocId
+      const initFiltered = docs.filter(d => d.on && (preServiceId ? (d.services || []).includes(preServiceId) : true))
+      return initFiltered[0]?.id || docs.find(d => d.on)?.id || 0
+    }
+    const [selDoc, setSelDoc] = useState(initDoc)
     const [date, setDate] = useState('')
     const [selSlot, setSelSlot] = useState('')
     const [busySlots, setBusySlots] = useState([])
@@ -60,16 +65,16 @@ export default function PatientApp({ profile, onLogout, showToast }) {
       }
     }, [selSvc])
 
-    // Când se schimbă doctorul sau data, fetch sloturi ocupate
     useEffect(() => {
-      if (!selDoc || !date) { setBusySlots([]); setSelSlot(''); return }
+      if (!selDoc || !date) { setBusySlots([]); setSelSlot(''); setLoadingSlots(false); return }
       setLoadingSlots(true)
       supabase.from('appointments').select('time').eq('doctor_id', selDoc).eq('date', date).neq('status', 'Anulată')
-        .then(({ data }) => {
-          setBusySlots((data || []).map(a => a.time))
+        .then(({ data, error }) => {
+          if (!error) setBusySlots((data || []).map(a => a.time))
           setSelSlot('')
           setLoadingSlots(false)
         })
+        .catch(() => setLoadingSlots(false))
     }, [selDoc, date])
 
     const docData = docs.find(d => d.id === selDoc)
