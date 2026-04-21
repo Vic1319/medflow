@@ -51,12 +51,14 @@ export default function PatientApp({ profile, onLogout, showToast }) {
     const [busySlots, setBusySlots] = useState([])
     const [loadingSlots, setLoadingSlots] = useState(false)
 
-    // Toți doctorii activi — fără filtru pe servicii pentru a include și doctorii noi
-    const avDocs = docs.filter(d => d.on)
+    const avDocs = docs.filter(d => d.on && (selSvc ? (d.services || []).includes(selSvc) : true))
 
     useEffect(() => {
-      if (!preDocId && avDocs.length > 0 && !avDocs.find(d => d.id === selDoc)) setSelDoc(avDocs[0].id)
-    }, [])
+      if (!preDocId) {
+        const filtered = docs.filter(d => d.on && (selSvc ? (d.services || []).includes(selSvc) : true))
+        if (filtered.length > 0 && !filtered.find(d => d.id === selDoc)) setSelDoc(filtered[0].id)
+      }
+    }, [selSvc])
 
     // Când se schimbă doctorul sau data, fetch sloturi ocupate
     useEffect(() => {
