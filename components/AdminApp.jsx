@@ -807,12 +807,12 @@ ${svcStats.map((s, i) => `
               <button key={v} className={`chip ${period === v ? 'on' : ''}`} onClick={() => selectPeriod(v)} style={{ flexShrink: 0 }}>{l}</button>
             ))}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12, overflow: 'hidden' }}>
             <FF label="De la">
-              <input className="inp" type="date" value={dateFrom} max={dateTo || today} onChange={e => { setDateFrom(e.target.value); setPeriod('custom') }} />
+              <input className="inp" type="date" value={dateFrom} max={dateTo || today} onChange={e => { setDateFrom(e.target.value); setPeriod('custom') }} style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }} />
             </FF>
             <FF label="Până la">
-              <input className="inp" type="date" value={dateTo} min={dateFrom} max={today} onChange={e => { setDateTo(e.target.value); setPeriod('custom') }} />
+              <input className="inp" type="date" value={dateTo} min={dateFrom} max={today} onChange={e => { setDateTo(e.target.value); setPeriod('custom') }} style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }} />
             </FF>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
