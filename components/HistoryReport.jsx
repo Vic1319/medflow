@@ -48,12 +48,12 @@ export default function HistoryReport({ title, patient, doctorFilter, allAppts, 
           </div>
         </div>
         <Div />
-        <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : 'repeat(5,1fr)', gap: 10, marginTop: 14 }}>
-          {[['cal', 'Vizite', totalAppts], ['chk', 'Finalizate', finalized], ['file', 'Rețete active', activeRx], ['clip', 'Fișe completate', completedRecords], ['steth', 'Medici', visitedDocs.length]].map(([ic, lb, vl]) => (
-            <div key={lb} style={{ background: T.surfaceAlt, borderRadius: T.r12, padding: '10px 12px', border: `1px solid ${T.border}`, textAlign: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: mob ? 'repeat(3,1fr)' : 'repeat(5,1fr)', gap: 8, marginTop: 14 }}>
+          {[['cal', 'Vizite', totalAppts], ['chk', 'Finalizate', finalized], ['file', 'Rețete', activeRx], ['clip', 'Fișe', completedRecords], ['steth', 'Medici', visitedDocs.length]].map(([ic, lb, vl]) => (
+            <div key={lb} style={{ background: T.surfaceAlt, borderRadius: T.r12, padding: mob ? '8px 6px' : '10px 12px', border: `1px solid ${T.border}`, textAlign: 'center', overflow: 'hidden' }}>
               <Ic n={ic} s={14} c={T.blue} />
-              <div style={{ fontSize: 18, fontWeight: 800, marginTop: 4 }}>{vl}</div>
-              <div style={{ fontSize: 10, color: T.inkFaint }}>{lb}</div>
+              <div style={{ fontSize: mob ? 16 : 18, fontWeight: 800, marginTop: 4 }}>{vl}</div>
+              <div style={{ fontSize: 9, color: T.inkFaint, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lb}</div>
             </div>
           ))}
         </div>
