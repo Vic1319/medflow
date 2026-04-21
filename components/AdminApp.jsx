@@ -28,6 +28,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
   const [medRecords, setMedRecords] = useState([])
   const [analyses, setAnalyses] = useState([])
   const [openRecord, setOpenRecord] = useState(null)
+  const [docServicesDid, setDocServicesDid] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const fetchAll = useCallback(async () => {
@@ -195,8 +196,9 @@ export default function AdminApp({ profile, onLogout, showToast }) {
                       </div>
                     ))}
                   </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button className="btn-g" style={{ flex: 1, justifyContent: 'center', fontSize: 12 }} onClick={() => setEditScheduleDoc(d)}><Ic n="cal" s={13} /> Program</button>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <button className="btn-g" style={{ flex: 1, justifyContent: 'center', fontSize: 12, minWidth: 'calc(50% - 3px)' }} onClick={() => setEditScheduleDoc(d)}><Ic n="cal" s={13} /> Program</button>
+                    <button className="btn-g" style={{ flex: 1, justifyContent: 'center', fontSize: 12, minWidth: 'calc(50% - 3px)' }} onClick={() => setDocServicesDid(d.id)}><Ic n="svc" s={13} /> Servicii {(d.services || []).length > 0 ? `(${(d.services || []).length})` : ''}</button>
                     <button className="btn-g" style={{ flex: 1, justifyContent: 'center', fontSize: 12 }} onClick={() => toggleDoc(d)}>{d.on ? 'Dezactivează' : 'Activează'}</button>
                     <button className="btn-d" style={{ padding: '8px 10px' }} onClick={() => deleteDoc(d.id)}><Ic n="trash" s={13} /></button>
                   </div>
@@ -533,6 +535,57 @@ export default function AdminApp({ profile, onLogout, showToast }) {
     )
   }
 
+  const DocServicesModal = () => {
+    const d = docs.find(x => x.id === docServicesDid)
+    if (!d) return null
+    const toggleSvc = async (svcId) => {
+      const cur = d.services || []
+      const has = cur.includes(svcId)
+      const next = has ? cur.filter(x => x !== svcId) : [...cur, svcId]
+      await supabase.from('doctors').update({ services: next }).eq('id', d.id)
+      showToast(has ? 'Serviciu eliminat' : 'Serviciu adăugat'); await fetchAll()
+    }
+    const activeSvcs = svcs.filter(s => s.active)
+    return (
+      <div className="ovl" onClick={e => e.target === e.currentTarget && setDocServicesDid(null)}>
+        <div className="modal" style={{ padding: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 17 }}>Servicii — {d.name}</div>
+              <div style={{ fontSize: 12, color: T.inkMid, marginTop: 2 }}>{(d.services || []).length} servicii active</div>
+            </div>
+            <button className="btn-g" style={{ padding: 6 }} onClick={() => setDocServicesDid(null)}><Ic n="x" s={15} /></button>
+          </div>
+          {activeSvcs.length === 0 ? (
+            <div className="card"><Empty icon="svc" title="Niciun serviciu" desc="Adaugă servicii din secțiunea Servicii" /></div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {activeSvcs.map(s => {
+                const has = (d.services || []).includes(s.id)
+                return (
+                  <div key={s.id} className="card" style={{ padding: 12, border: `1.5px solid ${has ? T.blue : T.border}`, transition: 'border-color .15s' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 38, height: 38, borderRadius: T.r8, background: has ? '#EFF6FF' : T.surfaceAlt, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}>
+                        <Ic n="svc" s={17} c={has ? T.blue : T.inkFaint} />
+                      </div>
+                      <div style={{ flex: 1, overflow: 'hidden' }}>
+                        <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
+                        <div style={{ fontSize: 12, color: T.inkMid }}>{s.price} · {s.duration}</div>
+                      </div>
+                      <button className={has ? 'btn-d' : 'btn-s'} style={{ padding: '7px 12px', fontSize: 12, flexShrink: 0 }} onClick={() => toggleSvc(s.id)}>
+                        {has ? 'Elimină' : 'Adaugă'}
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   const titles = {
     dashboard: 'Panou Administrare', patients: `Pacienți (${pats.length})`,
     doctors: `Medici (${docs.length})`, appointments: `Programări (${appts.length})`,
@@ -560,6 +613,7 @@ export default function AdminApp({ profile, onLogout, showToast }) {
       {editScheduleDoc && <ScheduleEditor doc={editScheduleDoc} onClose={() => setEditScheduleDoc(null)} onSaved={() => { fetchAll(); showToast('Program salvat!') }} />}
       {assignDocPat && <AssignDocModal pat={assignDocPat} onClose={() => setAssignDocPat(null)} />}
       {openRecord && <MedicalRecordForm record={openRecord.record} appt={openRecord.appt} onClose={() => setOpenRecord(null)} onSaved={fetchAll} />}
+      {docServicesDid && <DocServicesModal />}
     </div>
   )
 }

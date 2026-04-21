@@ -200,6 +200,7 @@ export default function PatientApp({ profile, onLogout, showToast }) {
       const allSl = generateSlots(dayName && vDoc.schedule?.[dayName])
       const freeSl = allSl.filter(s => !busySl.includes(s))
       const today = new Date().toISOString().slice(0, 10)
+      const docServices = svcs.filter(s => s.active && (vDoc.services || []).includes(s.id))
       return (
         <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <button className="btn-g" onClick={() => setViewDocId(null)} style={{ alignSelf: 'flex-start' }}><Ic n="left" s={14} /> Înapoi</button>
@@ -237,6 +238,31 @@ export default function PatientApp({ profile, onLogout, showToast }) {
               </div>
             )}
           </div>
+          {docServices.length > 0 && (
+            <div className="card" style={{ padding: 16 }}>
+              <div style={{ fontWeight: 700, marginBottom: 12 }}>Servicii oferite ({docServices.length})</div>
+              <div>
+                {docServices.map((s, i) => (
+                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i < docServices.length - 1 ? `1px solid ${T.border}` : 'none' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: T.r8, background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Ic n="svc" s={15} c={T.blue} />
+                    </div>
+                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                      <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
+                      {s.desc && <div style={{ fontSize: 12, color: T.inkMid, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.desc}</div>}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, flexShrink: 0 }}>
+                      <Tag v="blue">{s.price}</Tag>
+                      <span style={{ fontSize: 11, color: T.inkFaint }}>{s.duration}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button className="btn-p" style={{ width: '100%', justifyContent: 'center', marginTop: 14, background: `linear-gradient(135deg,${T.success},#047857)` }} onClick={() => setShowBook({ docId: vDoc.id })}>
+                <Ic n="cal" s={14} c="#fff" /> Programează-te
+              </button>
+            </div>
+          )}
           <div className="card" style={{ padding: 16 }}>
             <div style={{ fontWeight: 700, marginBottom: 12 }}>Verifică disponibilitate</div>
             <FF label="Alege data"><input className="inp" type="date" min={today} value={selDate} onChange={e => setSelDate(e.target.value)} /></FF>
