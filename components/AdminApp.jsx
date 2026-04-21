@@ -652,17 +652,30 @@ export default function AdminApp({ profile, onLogout, showToast }) {
   }
 
   const StatsPage = () => {
-    const [period, setPeriod] = useState('luna')
     const now = new Date()
     const today = now.toISOString().slice(0, 10)
-    const weekStart = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
-    const yearStart = `${now.getFullYear()}-01-01`
-    const filtered = period === 'azi' ? appts.filter(a => a.date === today)
-      : period === 'saptamana' ? appts.filter(a => a.date >= weekStart)
-      : period === 'luna' ? appts.filter(a => a.date >= monthStart)
-      : period === 'an' ? appts.filter(a => a.date >= yearStart)
-      : appts
+    const [period, setPeriod] = useState('luna')
+    const [dateFrom, setDateFrom] = useState(monthStart)
+    const [dateTo, setDateTo] = useState(today)
+
+    const selectPeriod = (v) => {
+      setPeriod(v)
+      const wStart = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+      const yStart = `${now.getFullYear()}-01-01`
+      if (v === 'azi') { setDateFrom(today); setDateTo(today) }
+      else if (v === 'saptamana') { setDateFrom(wStart); setDateTo(today) }
+      else if (v === 'luna') { setDateFrom(monthStart); setDateTo(today) }
+      else if (v === 'an') { setDateFrom(yStart); setDateTo(today) }
+      else if (v === 'total') { setDateFrom(''); setDateTo('') }
+    }
+
+    const filtered = appts.filter(a => {
+      if (dateFrom && a.date < dateFrom) return false
+      if (dateTo && a.date > dateTo) return false
+      return true
+    })
+
     const total = filtered.length
     const finished = filtered.filter(a => a.status === 'Finalizată').length
     const pending = filtered.filter(a => a.status === 'În așteptare').length
@@ -686,12 +699,121 @@ export default function AdminApp({ profile, onLogout, showToast }) {
     }).sort((a, b) => b.total - a.total)
     const svcStats = svcs.map(s => ({ ...s, count: filtered.filter(a => a.serviceId === s.id).length })).filter(s => s.count > 0).sort((a, b) => b.count - a.count)
     const topDoc = docStats.find(d => d.total > 0)
+
+    const periodLabel = dateFrom && dateTo ? `${dateFrom} — ${dateTo}` : dateFrom ? `de la ${dateFrom}` : dateTo ? `până la ${dateTo}` : 'Total (toate datele)'
+
+    const downloadPDF = () => {
+      const bar = (v, max, color) => `<div style="height:10px;border-radius:5px;background:#e5e7eb;overflow:hidden;margin:4px 0"><div style="height:100%;width:${max > 0 ? Math.round((v/max)*100) : 0}%;background:${color}"></div></div>`
+      const html = `<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8"><title>Raport Statistici — MedFlow</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#111;padding:32px;font-size:13px}
+  h1{font-size:22px;font-weight:800;margin-bottom:4px}
+  .sub{color:#6b7280;font-size:13px;margin-bottom:28px}
+  .section{margin-bottom:24px}
+  h2{font-size:15px;font-weight:700;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #f3f4f6}
+  .grid{display:grid;gap:12px}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+  .grid-2{grid-template-columns:repeat(2,1fr)}
+  .box{border:1px solid #e5e7eb;border-radius:8px;padding:14px}
+  .big{font-size:28px;font-weight:800;line-height:1;margin-top:4px}
+  .lbl{font-size:11px;color:#6b7280}
+  .row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f3f4f6}
+  .row:last-child{border-bottom:none}
+  .badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
+  @media print{body{padding:20px}@page{margin:1cm;size:A4}}
+</style></head><body>
+<h1>Raport Statistici — MedFlow</h1>
+<div class="sub">Perioadă: ${periodLabel} &nbsp;·&nbsp; Generat: ${new Date().toLocaleString('ro-RO')}</div>
+
+<div class="section">
+<h2>Sumar programări</h2>
+<div class="grid grid-4">
+  <div class="box"><div class="lbl">Programări totale</div><div class="big" style="color:#0891b2">${total}</div></div>
+  <div class="box"><div class="lbl">Finalizate</div><div class="big" style="color:#16a34a">${finished}</div></div>
+  <div class="box"><div class="lbl">Rată finalizare</div><div class="big" style="color:#2563eb">${rate}%</div></div>
+  <div class="box"><div class="lbl">Venituri estimate</div><div class="big" style="color:#9333ea">${revenue > 0 ? revenue.toLocaleString() + ' RON' : '—'}</div></div>
+</div></div>
+
+<div class="section">
+<h2>Detalii status</h2>
+<div class="row"><span>Finalizate (intrări)</span><span><strong style="color:#16a34a">${finished}</strong> <span style="color:#9ca3af">(${total > 0 ? Math.round((finished/total)*100) : 0}%)</span></span></div>
+${bar(finished, total, '#16a34a')}
+<div class="row"><span>În așteptare</span><span><strong style="color:#d97706">${pending}</strong> <span style="color:#9ca3af">(${total > 0 ? Math.round((pending/total)*100) : 0}%)</span></span></div>
+${bar(pending, total, '#d97706')}
+<div class="row"><span>Anulate (ieșiri)</span><span><strong style="color:#dc2626">${cancelled}</strong> <span style="color:#9ca3af">(${total > 0 ? Math.round((cancelled/total)*100) : 0}%)</span></span></div>
+${bar(cancelled, total, '#dc2626')}
+</div>
+
+<div class="section">
+<h2>Activitate pacienți</h2>
+<div class="grid grid-4">
+  <div class="box"><div class="lbl">Total pacienți clinic</div><div class="big" style="color:#2563eb">${pats.length}</div></div>
+  <div class="box"><div class="lbl">Activi în perioadă</div><div class="big" style="color:#0891b2">${activePats}</div></div>
+  <div class="box"><div class="lbl">Pacienți activi</div><div class="big" style="color:#16a34a">${pats.filter(p => p.status === 'Activ').length}</div></div>
+  <div class="box"><div class="lbl">Total medici activi</div><div class="big" style="color:#9333ea">${docs.filter(d => d.on).length}</div></div>
+</div></div>
+
+${docStats.filter(d => d.total > 0).length > 0 ? `<div class="section"><h2>Performanță medici</h2>
+${docStats.filter(d => d.total > 0).map(d => `
+<div class="row" style="flex-direction:column;align-items:flex-start;gap:6px">
+  <div style="display:flex;justify-content:space-between;width:100%">
+    <strong>${d.name}</strong>
+    <span><span style="color:#0891b2">${d.total} prog.</span>${d.revenue > 0 ? ` &nbsp;·&nbsp; <span style="color:#9333ea">${d.revenue.toLocaleString()} RON</span>` : ''}</span>
+  </div>
+  <div style="width:100%;font-size:11px;color:#6b7280">${d.finished} finalizate · ${d.total > 0 ? Math.round((d.finished/d.total)*100) : 0}% rată succes</div>
+  ${bar(d.finished, d.total, '#16a34a')}
+</div>`).join('')}
+</div>` : ''}
+
+${svcStats.length > 0 ? `<div class="section"><h2>Servicii utilizate</h2>
+${svcStats.map((s, i) => `
+<div class="row" style="flex-direction:column;align-items:flex-start;gap:4px">
+  <div style="display:flex;justify-content:space-between;width:100%">
+    <span>${i + 1}. ${s.name}</span><strong style="color:#0891b2">${s.count}×</strong>
+  </div>
+  ${bar(s.count, svcStats[0].count, '#0891b2')}
+</div>`).join('')}
+</div>` : ''}
+
+<div class="section">
+<h2>Sumar clinică</h2>
+<div class="grid grid-2">
+  <div class="box"><div class="lbl">Fișe medicale totale</div><div class="big" style="color:#9333ea">${medRecords.length}</div><div class="lbl">${medRecords.filter(r => r.status === 'completed').length} completate</div></div>
+  <div class="box"><div class="lbl">Analize totale</div><div class="big" style="color:#d97706">${analyses.length}</div><div class="lbl">${analyses.filter(a => a.status === 'Anormal').length} anormale</div></div>
+</div></div>
+
+<div style="margin-top:32px;padding-top:16px;border-top:1px solid #e5e7eb;color:#9ca3af;font-size:11px">
+  Raport generat automat de MedFlow &nbsp;·&nbsp; ${new Date().toLocaleString('ro-RO')}
+</div>
+</body></html>`
+      const w = window.open('', '_blank', 'width=900,height=700')
+      w.document.write(html)
+      w.document.close()
+      w.focus()
+      setTimeout(() => w.print(), 400)
+    }
+
     return (
       <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
-          {[['azi', 'Azi'], ['saptamana', '7 zile'], ['luna', 'Luna aceasta'], ['an', 'Anul acesta'], ['total', 'Total']].map(([v, l]) => (
-            <button key={v} className={`chip ${period === v ? 'on' : ''}`} onClick={() => setPeriod(v)} style={{ flexShrink: 0 }}>{l}</button>
-          ))}
+        <div className="card" style={{ padding: 16 }}>
+          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, marginBottom: 10, borderBottom: `1px solid ${T.border}` }}>
+            {[['azi', 'Azi'], ['saptamana', '7 zile'], ['luna', 'Luna aceasta'], ['an', 'Anul acesta'], ['total', 'Total']].map(([v, l]) => (
+              <button key={v} className={`chip ${period === v ? 'on' : ''}`} onClick={() => selectPeriod(v)} style={{ flexShrink: 0 }}>{l}</button>
+            ))}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 12 }}>
+            <FF label="De la">
+              <input className="inp" type="date" value={dateFrom} max={dateTo || today} onChange={e => { setDateFrom(e.target.value); setPeriod('custom') }} />
+            </FF>
+            <FF label="Până la">
+              <input className="inp" type="date" value={dateTo} min={dateFrom} max={today} onChange={e => { setDateTo(e.target.value); setPeriod('custom') }} />
+            </FF>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, color: T.inkFaint }}>{total} programări în intervalul selectat</span>
+            <button className="btn-p" style={{ gap: 6 }} onClick={downloadPDF}><Ic n="dl" s={14} c="#fff" /> Descarcă PDF</button>
+          </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : 'repeat(4,1fr)', gap: mob ? 10 : 14 }}>
           {[
