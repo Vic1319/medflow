@@ -21,6 +21,143 @@ export default function HistoryReport({ title, patient, doctorFilter, allAppts, 
 
   const [tab, setTab] = useState('overview')
 
+  const downloadPDF = () => {
+    const row = (label, value) => value ? `<div class="row"><span class="lbl">${label}</span><span class="val">${value}</span></div>` : ''
+    const bar = (v, max, color) => `<div style="height:8px;border-radius:4px;background:#e5e7eb;overflow:hidden;margin:3px 0 8px"><div style="height:100%;width:${max > 0 ? Math.round((v/max)*100) : 0}%;background:${color}"></div></div>`
+    const html = `<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8">
+<title>Dosar Medical — ${patient.name}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111;padding:32px;font-size:13px;line-height:1.5}
+  h1{font-size:22px;font-weight:800;margin-bottom:2px}
+  .meta{color:#6b7280;font-size:12px;margin-bottom:24px}
+  h2{font-size:14px;font-weight:700;margin:20px 0 10px;padding-bottom:5px;border-bottom:2px solid #e5e7eb;color:#1d4ed8}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .box{border:1px solid #e5e7eb;border-radius:8px;padding:12px;text-align:center}
+  .box .num{font-size:24px;font-weight:800;margin:4px 0 2px}
+  .box .lbl2{font-size:10px;color:#9ca3af}
+  .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6}
+  .row:last-child{border-bottom:none}
+  .lbl{font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:600}
+  .val{font-size:13px;font-weight:600;text-align:right;max-width:60%}
+  .appt{border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start}
+  .appt-date{background:linear-gradient(135deg,#2563eb,#0891b2);border-radius:6px;padding:6px 10px;text-align:center;color:#fff;min-width:50px;flex-shrink:0}
+  .appt-date .t{font-size:13px;font-weight:700}
+  .appt-date .d{font-size:9px;opacity:.8}
+  .badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;margin-left:8px}
+  .badge-g{background:#dcfce7;color:#166534}
+  .badge-y{background:#fef3c7;color:#92400e}
+  .badge-r{background:#fee2e2;color:#991b1b}
+  .badge-b{background:#dbeafe;color:#1e40af}
+  .rec{border:1px solid #e5e7eb;border-left:4px solid #16a34a;border-radius:8px;padding:12px;margin-bottom:8px}
+  .rec-field{background:#f9fafb;border-radius:6px;padding:8px 10px;margin-top:6px}
+  .rec-field .fl{font-size:10px;color:#9ca3af;font-weight:700;text-transform:uppercase;margin-bottom:2px}
+  .vital{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;margin:2px}
+  .rx{border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:8px}
+  .doc-card{border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:8px}
+  @media print{body{padding:16px}@page{margin:1.2cm;size:A4}}
+</style></head><body>
+<h1>${patient.name}</h1>
+<div class="meta">
+  Dosar medical complet · ${age(patient.dob)} ani · Grupa sanguină: ${patient.group || '—'} · Medic curant: ${patient.doctor || '—'} · Generat: ${new Date().toLocaleString('ro-RO')}
+</div>
+
+<h2>Sumar</h2>
+<div class="grid-4">
+  <div class="box"><div class="num" style="color:#2563eb">${totalAppts}</div><div class="lbl2">Vizite totale</div></div>
+  <div class="box"><div class="num" style="color:#16a34a">${finalized}</div><div class="lbl2">Finalizate</div></div>
+  <div class="box"><div class="num" style="color:#9333ea">${pRx.length}</div><div class="lbl2">Rețete</div></div>
+  <div class="box"><div class="num" style="color:#0891b2">${completedRecords}</div><div class="lbl2">Fișe completate</div></div>
+</div>
+
+<h2>Informații personale</h2>
+${row('Telefon', patient.phone)}
+${row('Email', patient.email)}
+${row('Data nașterii', fmt(patient.dob))}
+${row('Vârstă', age(patient.dob) + ' ani')}
+${row('Grup sanguin', patient.group)}
+${row('Alergii', patient.allergies || 'Niciuna')}
+${row('Medic curant', patient.doctor)}
+${row('Pacient din', firstAppt ? fmt(firstAppt.date) : '—')}
+${patient.notes ? `<div style="margin-top:10px;background:#f9fafb;border-radius:8px;padding:12px;border:1px solid #e5e7eb"><div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px">Observații medicale</div><div style="font-size:13px;color:#374151">${patient.notes}</div></div>` : ''}
+
+${pRecords.filter(r => r.status === 'completed' && r.diagnostic).length > 0 ? `
+<h2>Fișe medicale (${completedRecords} completate din ${pRecords.length})</h2>
+${pRecords.filter(r => r.status === 'completed').map(r => {
+  const appt = allAppts.find(a => a.id === r.appointmentId)
+  return `<div class="rec">
+  <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+    <strong>${appt ? fmt(appt.date) : '—'}${appt?.time ? ' · ' + appt.time : ''}</strong>
+    <span style="font-size:12px;color:#6b7280">${r.doctorName || ''}</span>
+  </div>
+  ${r.diagnostic ? `<div class="rec-field"><div class="fl">Diagnostic</div><div style="font-weight:700">${r.diagnostic}</div></div>` : ''}
+  ${r.recomandari ? `<div class="rec-field"><div class="fl">Recomandări</div><div>${r.recomandari}</div></div>` : ''}
+  ${r.acuze ? `<div class="rec-field"><div class="fl">Acuze</div><div>${r.acuze}</div></div>` : ''}
+  ${(r.temperatura || r.ta || r.fcc || r.spo2) ? `<div style="margin-top:8px">
+    ${r.temperatura ? `<span class="vital" style="background:#fee2e2;color:#991b1b">t° ${r.temperatura}</span>` : ''}
+    ${r.ta ? `<span class="vital" style="background:#dbeafe;color:#1e40af">TA ${r.ta}</span>` : ''}
+    ${r.fcc ? `<span class="vital" style="background:#f3e8ff;color:#7e22ce">FCC ${r.fcc}</span>` : ''}
+    ${r.spo2 ? `<span class="vital" style="background:#dcfce7;color:#166534">SpO2 ${r.spo2}%</span>` : ''}
+  </div>` : ''}
+</div>`}).join('')}` : ''}
+
+${pAppts.length > 0 ? `
+<h2>Istoricul programărilor (${pAppts.length})</h2>
+${pAppts.map(a => {
+  const badgeClass = a.status === 'Finalizată' ? 'badge-b' : a.status === 'Anulată' ? 'badge-r' : a.status === 'Confirmată' ? 'badge-g' : 'badge-y'
+  return `<div class="appt">
+  <div class="appt-date"><div class="t">${a.time}</div><div class="d">${fmt(a.date)}</div></div>
+  <div style="flex:1">
+    <div style="font-weight:600">${a.type || 'Consultație'}</div>
+    <div style="font-size:12px;color:#6b7280">${a.doctor} · ${a.room || ''}</div>
+    <span class="badge ${badgeClass}">${a.status}</span>
+  </div>
+</div>`}).join('')}` : ''}
+
+${pRx.length > 0 ? `
+<h2>Rețete (${pRx.length})</h2>
+${pRx.map(r => `<div class="rx">
+  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+    <strong>${r.diagnosis || '—'}</strong>
+    <span class="badge ${r.status === 'Activă' ? 'badge-g' : 'badge-y'}">${r.status}</span>
+  </div>
+  <div style="color:#2563eb;font-weight:600;margin-bottom:4px">${r.medicines || '—'}</div>
+  <div style="font-size:12px;color:#9ca3af">${r.doctorName} · ${fmt(r.date)}</div>
+</div>`).join('')}` : ''}
+
+${visitedDocs.length > 0 ? `
+<h2>Medici consultați (${visitedDocs.length})</h2>
+${visitedDocs.map(d => {
+  const dA = allAppts.filter(a => a.patientId === patient.id && a.doctorId === d.id)
+  const dR = allRx.filter(r => r.patientId === patient.id && r.doctorId === d.id)
+  return `<div class="doc-card">
+  <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+    <div><strong>${d.name}</strong>${d.name === patient.doctor ? ' <span class="badge badge-b">Curant</span>' : ''}<div style="font-size:12px;color:#6b7280">${d.spec || ''}</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+    <div class="box"><div class="num" style="color:#2563eb;font-size:18px">${dA.length}</div><div class="lbl2">Vizite</div></div>
+    <div class="box"><div class="num" style="color:#16a34a;font-size:18px">${dA.filter(a => a.status === 'Finalizată').length}</div><div class="lbl2">Finalizate</div></div>
+    <div class="box"><div class="num" style="color:#9333ea;font-size:18px">${dR.length}</div><div class="lbl2">Rețete</div></div>
+  </div>
+</div>`}).join('')}` : ''}
+
+<div style="margin-top:32px;padding-top:12px;border-top:1px solid #e5e7eb;color:#9ca3af;font-size:11px">
+  Document generat automat de MedFlow · ${new Date().toLocaleString('ro-RO')} · Confidențial — uz intern
+</div>
+</body></html>`
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none'
+    document.body.appendChild(iframe)
+    iframe.contentDocument.write(html)
+    iframe.contentDocument.close()
+    setTimeout(() => {
+      iframe.contentWindow.focus()
+      iframe.contentWindow.print()
+      setTimeout(() => document.body.removeChild(iframe), 2000)
+    }, 300)
+  }
+
   const tabs = [
     ['overview', 'Sumar'],
     ['appointments', `Programări (${pAppts.length})`],
@@ -32,7 +169,10 @@ export default function HistoryReport({ title, patient, doctorFilter, allAppts, 
 
   return (
     <div className="fade-up">
-      <button className="btn-g" onClick={onBack} style={{ marginBottom: 14 }}><Ic n="left" s={14} /> Înapoi</button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <button className="btn-g" onClick={onBack}><Ic n="left" s={14} /> Înapoi</button>
+        <button className="btn-p" onClick={downloadPDF} style={{ gap: 6 }}><Ic n="dl" s={14} c="#fff" /> Descarcă PDF</button>
+      </div>
 
       {/* Header pacient */}
       <div className="card" style={{ padding: mob ? 16 : 24, marginBottom: 14 }}>
