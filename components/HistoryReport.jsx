@@ -188,12 +188,18 @@ ${visitedDocs.map(d => {
           </div>
         </div>
         <Div />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: mob ? 5 : 10, marginTop: 14 }}>
-          {[['cal', 'Vizite', totalAppts], ['chk', 'Finalizate', finalized], ['file', 'Rețete', activeRx], ['clip', 'Fișe', completedRecords], ['steth', 'Medici', visitedDocs.length]].map(([ic, lb, vl]) => (
-            <div key={lb} style={{ background: T.surfaceAlt, borderRadius: T.r8, padding: mob ? '8px 4px' : '10px 12px', border: `1px solid ${T.border}`, textAlign: 'center', overflow: 'hidden', minWidth: 0 }}>
-              <Ic n={ic} s={13} c={T.blue} />
-              <div style={{ fontSize: 16, fontWeight: 800, marginTop: 3, lineHeight: 1 }}>{vl}</div>
-              {!mob && <div style={{ fontSize: 10, color: T.inkFaint, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lb}</div>}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 8, marginTop: 14 }}>
+          {[
+            ['cal', 'Vizite', totalAppts, '1 / span 2'],
+            ['chk', 'Finalizate', finalized, '3 / span 2'],
+            ['file', 'Rețete', activeRx, '5 / span 2'],
+            ['clip', 'Fișe completate', completedRecords, '2 / span 2'],
+            ['steth', 'Medici consultați', visitedDocs.length, '4 / span 2'],
+          ].map(([ic, lb, vl, col]) => (
+            <div key={lb} style={{ gridColumn: col, background: T.surfaceAlt, borderRadius: T.r12, padding: '10px 8px', border: `1px solid ${T.border}`, textAlign: 'center' }}>
+              <Ic n={ic} s={15} c={T.blue} />
+              <div style={{ fontSize: 20, fontWeight: 800, marginTop: 4, lineHeight: 1 }}>{vl}</div>
+              <div style={{ fontSize: 10, color: T.inkFaint, marginTop: 4 }}>{lb}</div>
             </div>
           ))}
         </div>
