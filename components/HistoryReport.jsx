@@ -206,9 +206,9 @@ ${visitedDocs.map(d => {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 14, overflowX: 'auto', paddingBottom: 4 }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 14, overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch' }}>
         {tabs.map(([id, l]) => (
-          <button key={id} className={`chip ${tab === id ? 'on' : ''}`} onClick={() => setTab(id)}>{l}</button>
+          <button key={id} className={`chip ${tab === id ? 'on' : ''}`} onClick={() => setTab(id)} style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{l}</button>
         ))}
       </div>
 
