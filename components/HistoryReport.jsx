@@ -188,12 +188,12 @@ ${visitedDocs.map(d => {
           </div>
         </div>
         <Div />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: mob ? 6 : 10, marginTop: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: mob ? 5 : 10, marginTop: 14 }}>
           {[['cal', 'Vizite', totalAppts], ['chk', 'Final.', finalized], ['file', 'Rețete', activeRx], ['clip', 'Fișe', completedRecords], ['steth', 'Medici', visitedDocs.length]].map(([ic, lb, vl]) => (
-            <div key={lb} style={{ background: T.surfaceAlt, borderRadius: T.r8, padding: mob ? '7px 4px' : '10px 12px', border: `1px solid ${T.border}`, textAlign: 'center', overflow: 'hidden' }}>
-              <Ic n={ic} s={mob ? 12 : 14} c={T.blue} />
-              <div style={{ fontSize: mob ? 15 : 18, fontWeight: 800, marginTop: 3, lineHeight: 1 }}>{vl}</div>
-              <div style={{ fontSize: mob ? 8 : 10, color: T.inkFaint, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lb}</div>
+            <div key={lb} style={{ background: T.surfaceAlt, borderRadius: T.r8, padding: mob ? '6px 2px' : '10px 12px', border: `1px solid ${T.border}`, textAlign: 'center', overflow: 'hidden', minWidth: 0 }}>
+              <Ic n={ic} s={mob ? 11 : 14} c={T.blue} />
+              <div style={{ fontSize: mob ? 14 : 18, fontWeight: 800, marginTop: 2, lineHeight: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{vl}</div>
+              <div style={{ fontSize: mob ? 8 : 10, color: T.inkFaint, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{lb}</div>
             </div>
           ))}
         </div>
