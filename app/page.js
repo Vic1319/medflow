@@ -87,6 +87,8 @@ export default function Home() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
+    setSession(null)
+    setProfile(null)
     showToast('Deconectat', 'info')
   }
 

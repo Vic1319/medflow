@@ -22,6 +22,7 @@ create table if not exists doctors (
   schedule       jsonb default '{}',
   bio            text default '',
   services       integer[] default '{}',
+  avatar_url     text default '',
   created_at     timestamptz default now()
 );
 
@@ -38,6 +39,7 @@ create table if not exists patients (
   status       text default 'Sănătos',
   notes        text default '',
   email        text unique not null,
+  avatar_url   text default '',
   created_at   timestamptz default now()
 );
 
@@ -136,6 +138,16 @@ create policy "auth_all_delete_reqs"   on delete_requests for all to authenticat
 -- Permite citire publică pentru servicii și medici (pagina de booking)
 create policy "public_read_services" on services for select using (true);
 create policy "public_read_doctors"  on doctors  for select using (true);
+
+-- ─── STORAGE (avatare medici & pacienți) ──────────────────
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do update set public = true;
+
+create policy "auth_upload_avatars"  on storage.objects for insert to authenticated with check (bucket_id = 'avatars');
+create policy "auth_update_avatars"  on storage.objects for update to authenticated using (bucket_id = 'avatars');
+create policy "auth_delete_avatars"  on storage.objects for delete to authenticated using (bucket_id = 'avatars');
+create policy "public_read_avatars"  on storage.objects for select using (bucket_id = 'avatars');
 
 -- ─── DATE SEED ────────────────────────────────────────────
 
